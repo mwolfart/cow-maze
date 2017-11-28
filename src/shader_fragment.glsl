@@ -92,7 +92,7 @@ void main()
         vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
         color = Kd0 * (lambert + 0.01);
     }
-    else if ( object_id == BUNNY )
+    else if ( object_id == BUNNY || object_id == COW )
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -106,12 +106,12 @@ void main()
         U = (position_model[0] - minx)/(maxx - minx);
         V = (position_model[1] - miny)/(maxy - miny);
 
-        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-        color = Kd0 * (lambert + 0.01);
+        vec3 Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
+        color = Kd0;
     }
     else if ( object_id == PLANE )
     {
-        int number_of_repetitions = 16;
+        int number_of_repetitions = 32;
         float period = 1.0f/number_of_repetitions;
         U = mod(texcoords.x, period)*number_of_repetitions;
         V = mod(texcoords.y, period)*number_of_repetitions;
@@ -125,7 +125,7 @@ void main()
         V = texcoords.y;
 
         vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-        color = Kd1 * (lambert + 0.01);
+        color = Kd1;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.

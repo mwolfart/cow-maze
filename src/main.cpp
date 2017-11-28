@@ -233,7 +233,8 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/textures/ground.png");      // TextureImage0
-    LoadTextureImage("../../data/textures/wall.png"); // TextureImage1
+    LoadTextureImage("../../data/textures/wall.png");   // TextureImage1
+    LoadTextureImage("../../data/textures/cow.png");    // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -251,6 +252,10 @@ int main(int argc, char* argv[])
     ObjModel cubemodel("../../data/cube.obj");
     ComputeNormals(&cubemodel);
     BuildTrianglesAndAddToVirtualScene(&cubemodel);
+
+    ObjModel cowmodel("../../data/cow.obj");
+    ComputeNormals(&cowmodel);
+    BuildTrianglesAndAddToVirtualScene(&cowmodel);
 
     if ( argc > 1 )
     {
@@ -307,28 +312,24 @@ int main(int argc, char* argv[])
         #define SPHERE 3
         #define CUBE   4
 
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(0.6f)
-              * Matrix_Rotate_X(0.2f)
-              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, SPHERE);
-        DrawVirtualObject("sphere");
+        ///////////////////
+        // VACA: JOGADOR //
+        ///////////////////
 
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        // How can we get the model size?
+        model = Matrix_Translate(8.0f,-0.6f,2.0f)
+                * Matrix_Scale(0.6f, 0.6f, 0.6f)
+                * Matrix_Rotate_Y(3.14f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
+        glUniform1i(object_id_uniform, COW);
+        DrawVirtualObject("cow");
 
         ///////////
         // PLANO //
         ///////////
 
         model = Matrix_Translate(0.0f,-1.0f,0.0f)
-              * Matrix_Scale(10.0f, 1.0f, 10.0f);
+                * Matrix_Scale(16.0f, 1.0f, 16.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
@@ -336,11 +337,35 @@ int main(int argc, char* argv[])
         ////////////////////
         // BLOCOS SÓLIDOS //
         ////////////////////
+        int i, j;
 
-        model = Matrix_Translate(3.0f,0.0f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, CUBE);
-        DrawVirtualObject("cube");
+        for(i = 0; i < 10; i++) {
+            model = Matrix_Translate(0.5f + i,-0.5f,0.5f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, CUBE);
+            DrawVirtualObject("cube");
+        }
+
+        for(j = 0; j < 10; j++) {
+            model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, CUBE);
+            DrawVirtualObject("cube");
+        }
+
+        for(i = i; i > 0; i--) {
+            model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, CUBE);
+            DrawVirtualObject("cube");
+        }
+
+        for(j = j; j > 0; j--) {
+            model = Matrix_Translate(0.5f,-0.5f,0.5f + j);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, CUBE);
+            DrawVirtualObject("cube");
+        }
 
         //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
         //TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
