@@ -511,7 +511,7 @@
 	<windows.h>
 	<dlfcn.h>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glad\glad.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glad\glad.h
 	<windows.h>
 	<stddef.h>
 	<KHR/khrplatform.h>
@@ -522,29 +522,37 @@
 	<stdint.h>
 	<inttypes.h>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\khr\khrplatform.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\khr\khrplatform.h
 	<sys/cdefs.h>
 	<stdint.h>
 	<inttypes.h>
 	<stdint.h>
 
-1507857153 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
+1511876801 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
 	<map>
+	<stack>
 	<string>
+	<vector>
+	<limits>
 	<fstream>
+	<iostream>
 	<sstream>
+	<stdexcept>
+	<algorithm>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
 	<glm/mat4x4.hpp>
 	<glm/vec4.hpp>
 	<glm/gtc/type_ptr.hpp>
+	<tiny_obj_loader.h>
+	<stb_image.h>
 	"utils.h"
 	"matrices.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glfw\glfw3.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glfw\glfw3.h
 	<stddef.h>
 	<stdint.h>
 	<OpenGL/gl3.h>
@@ -565,10 +573,10 @@
 	<GL/glext.h>
 	<GL/glu.h>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x4.hpp
 	"detail/type_mat4x4.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.hpp
 	"../fwd.hpp"
 	"type_vec4.hpp"
 	"type_mat.hpp"
@@ -576,23 +584,23 @@
 	<cstddef>
 	"type_mat4x4.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\fwd.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\fwd.hpp
 	"detail/type_int.hpp"
 	"detail/type_float.hpp"
 	"detail/type_vec.hpp"
 	"detail/type_mat.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_int.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_int.hpp
 	"setup.hpp"
 	<type_traits>
 	<cstdint>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\setup.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\setup.hpp
 	<cassert>
 	<cstddef>
 	"../simd/platform.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\platform.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\platform.h
 	<cuda.h>
 	<intrin.h>
 	<immintrin.h>
@@ -604,40 +612,40 @@
 	<pmmintrin.h>
 	<emmintrin.h>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_float.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_float.hpp
 	"setup.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec.hpp
 	"precision.hpp"
 	"type_int.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\precision.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\precision.hpp
 	"setup.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat.hpp
 	"precision.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec4.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle.hpp
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle_func.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle_func.hpp
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.inl
 	"type_vec4_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4_simd.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.inl
 	"func_matrix.hpp"
 	"type_mat4x4_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.hpp
 	"../detail/precision.hpp"
 	"../detail/setup.hpp"
 	"../detail/type_mat.hpp"
@@ -655,37 +663,37 @@
 	"../mat4x4.hpp"
 	"func_matrix.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec2.hpp
 	"detail/type_vec2.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec2.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec3.hpp
 	"detail/type_vec3.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec3.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec4.hpp
 	"detail/type_vec4.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x2.hpp
 	"detail/type_mat2x2.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_mat.hpp"
@@ -693,13 +701,13 @@
 	<cstddef>
 	"type_mat2x2.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.inl
 	"func_matrix.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x3.hpp
 	"detail/type_mat2x3.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -708,12 +716,12 @@
 	<cstddef>
 	"type_mat2x3.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x4.hpp
 	"detail/type_mat2x4.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec4.hpp"
@@ -722,12 +730,12 @@
 	<cstddef>
 	"type_mat2x4.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x2.hpp
 	"detail/type_mat3x2.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -736,12 +744,12 @@
 	<cstddef>
 	"type_mat3x2.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x3.hpp
 	"detail/type_mat3x3.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_mat.hpp"
@@ -749,13 +757,13 @@
 	<cstddef>
 	"type_mat3x3.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.inl
 	"func_matrix.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x4.hpp
 	"detail/type_mat3x4.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
@@ -764,12 +772,12 @@
 	<cstddef>
 	"type_mat3x4.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x2.hpp
 	"detail/type_mat4x2.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec4.hpp"
@@ -778,12 +786,12 @@
 	<cstddef>
 	"type_mat4x2.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x3.hpp
 	"detail/type_mat4x3.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
@@ -792,21 +800,21 @@
 	<cstddef>
 	"type_mat4x3.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.inl
 	"../geometric.hpp"
 	<limits>
 	"func_matrix_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\geometric.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\geometric.hpp
 	"detail/func_geometric.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.hpp
 	"type_vec3.hpp"
 	"func_geometric.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.inl
 	"func_exponential.hpp"
 	"func_common.hpp"
 	"type_vec2.hpp"
@@ -814,7 +822,7 @@
 	"type_float.hpp"
 	"func_geometric_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.hpp
 	"type_vec1.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -822,7 +830,7 @@
 	<cmath>
 	"func_exponential.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.hpp
 	"../fwd.hpp"
 	"type_vec.hpp"
 	"_swizzle.hpp"
@@ -830,9 +838,9 @@
 	<cstddef>
 	"type_vec1.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.inl
 	"func_vector_relational.hpp"
 	"_vectorize.hpp"
 	<limits>
@@ -840,40 +848,40 @@
 	<cassert>
 	"func_exponential_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.hpp
 	"precision.hpp"
 	"setup.hpp"
 	"func_vector_relational.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.inl
 	<limits>
 	"func_vector_relational_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational_simd.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_vectorize.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_vectorize.hpp
 	"type_vec1.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential_simd.inl
 	"../simd/exponential.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\exponential.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\exponential.h
 	"platform.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.hpp
 	"setup.hpp"
 	"precision.hpp"
 	"type_int.hpp"
 	"_fixes.hpp"
 	"func_common.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_fixes.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_fixes.hpp
 	<cmath>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.inl
 	"func_vector_relational.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -882,30 +890,30 @@
 	<limits>
 	"func_common_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common_simd.inl
 	"../simd/common.h"
 	<immintrin.h>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\common.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\common.h
 	"platform.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric_simd.inl
 	"../simd/geometric.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\geometric.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\geometric.h
 	"common.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix_simd.inl
 	"type_mat4x4.hpp"
 	"func_geometric.hpp"
 	"../simd/matrix.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\matrix.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\matrix.h
 	"geometric.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4_simd.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.hpp
 	"../gtc/quaternion.hpp"
 	"../vec2.hpp"
 	"../vec3.hpp"
@@ -922,7 +930,7 @@
 	<cstring>
 	"type_ptr.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.hpp
 	"../mat3x3.hpp"
 	"../mat4x4.hpp"
 	"../vec3.hpp"
@@ -930,42 +938,42 @@
 	"../gtc/constants.hpp"
 	"quaternion.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.hpp
 	"../detail/setup.hpp"
 	"constants.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.inl
 	<limits>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.inl
 	"../trigonometric.hpp"
 	"../geometric.hpp"
 	"../exponential.hpp"
 	<limits>
 	"quaternion_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\trigonometric.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\trigonometric.hpp
 	"detail/func_trigonometric.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.hpp
 	"setup.hpp"
 	"precision.hpp"
 	"func_trigonometric.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.inl
 	"_vectorize.hpp"
 	<cmath>
 	<limits>
 	"func_trigonometric_simd.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric_simd.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\exponential.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\exponential.hpp
 	"detail/func_exponential.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion_simd.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion_simd.inl
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.inl
 	<cstring>
 
 1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\utils.h
@@ -978,7 +986,7 @@
 	<glm/vec4.hpp>
 	<glm/gtc/matrix_transform.hpp>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.hpp
 	"../mat4x4.hpp"
 	"../vec2.hpp"
 	"../vec3.hpp"
@@ -986,12 +994,12 @@
 	"../gtc/constants.hpp"
 	"matrix_transform.inl"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.inl
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.inl
 	"../geometric.hpp"
 	"../trigonometric.hpp"
 	"../matrix.hpp"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\matrix.hpp
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\matrix.hpp
 	"detail/func_matrix.hpp"
 
 1507049637 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\textrendering.cpp
@@ -1006,4 +1014,40 @@
 1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\dejavufont.h
 	<stddef.h>
 	<stdint.h>
+
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\tiny_obj_loader.h
+	<map>
+	<string>
+	<vector>
+	<cassert>
+	<cctype>
+	<cmath>
+	<cstddef>
+	<cstdlib>
+	<cstring>
+	<utility>
+	<fstream>
+	<sstream>
+
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\stb_image.cpp
+	"stb_image.h"
+
+1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\tiny_obj_loader.cpp
+	"tiny_obj_loader.h"
 

@@ -2,40 +2,14 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="src\shader_vertex.glsl" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1955" topLine="31" />
-		</Cursor>
-	</File>
 	<File name="include\utils.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="55" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include\matrices.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\shader_fragment.glsl" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="248" topLine="225" />
-		</Cursor>
-	</File>
-	<File name="src\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="866" topLine="282" />
-		</Cursor>
-		<Folding>
-			<Collapse line="339" />
-			<Collapse line="492" />
-			<Collapse line="506" />
-			<Collapse line="521" />
-			<Collapse line="591" />
-			<Collapse line="641" />
-			<Collapse line="782" />
-			<Collapse line="803" />
-			<Collapse line="819" />
-		</Folding>
-	</File>
-	<File name="src\shader_fragment.glsl" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="0" topLine="0" />
+			<Cursor1 position="1644" topLine="84" />
 		</Cursor>
 	</File>
 	<File name="src\textrendering.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -43,9 +17,38 @@
 			<Cursor1 position="2352" topLine="0" />
 		</Cursor>
 	</File>
+	<File name="src\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="33006" topLine="122" />
+		</Cursor>
+		<Folding>
+			<Collapse line="366" />
+			<Collapse line="523" />
+			<Collapse line="607" />
+			<Collapse line="613" />
+			<Collapse line="628" />
+			<Collapse line="690" />
+			<Collapse line="850" />
+			<Collapse line="864" />
+			<Collapse line="879" />
+			<Collapse line="949" />
+			<Collapse line="999" />
+			<Collapse line="1006" />
+		</Folding>
+	</File>
 	<File name="src\glad.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="4158" topLine="173" />
+		</Cursor>
+	</File>
+	<File name="src\shader_vertex.glsl" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="480" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\matrices.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="248" topLine="225" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
