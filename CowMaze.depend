@@ -503,7 +503,7 @@
 	<stddef.h>
 	<stdint.h>
 
-1507049637 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\glad.c
+1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\glad.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -528,7 +528,7 @@
 	<inttypes.h>
 	<stdint.h>
 
-1511876801 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
+1511898910 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -976,10 +976,10 @@
 1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.inl
 	<cstring>
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\utils.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\utils.h
 	<cstdio>
 
-1507856828 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\matrices.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\matrices.h
 	<cstdio>
 	<cstdlib>
 	<glm/mat4x4.hpp>
@@ -1002,7 +1002,7 @@
 1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\matrix.hpp
 	"detail/func_matrix.hpp"
 
-1507049637 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\textrendering.cpp
+1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\textrendering.cpp
 	<string>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
@@ -1011,7 +1011,7 @@
 	"utils.h"
 	"dejavufont.h"
 
-1507049637 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\dejavufont.h
+1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\dejavufont.h
 	<stddef.h>
 	<stdint.h>
 

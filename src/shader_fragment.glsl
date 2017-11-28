@@ -2,40 +2,40 @@
 
 // Atributos de fragmentos recebidos como entrada ("in") pelo Fragment Shader.
 // Neste exemplo, este atributo foi gerado pelo rasterizador como a
-// interpolaÁ„o da cor de cada vÈrtice, definidas em "shader_vertex.glsl" e
+// interpola√ß√£o da cor de cada v√©rtice, definidas em "shader_vertex.glsl" e
 // "main.cpp".
 in vec4 position_world;
 in vec4 normal;
 
-// PosiÁ„o do vÈrtice atual no sistema de coordenadas local do modelo.
+// Posi√ß√£o do v√©rtice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
 
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
 
-// Matrizes computadas no cÛdigo C++ e enviadas para a GPU
+// Matrizes computadas no c√≥digo C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-// Identificador que define qual objeto est· sendo desenhado no momento
+// Identificador que define qual objeto est√° sendo desenhado no momento
 #define PLANE  0
-#define SOLIDBLOCK 1
-#define COW 2
-#define BUNNY 3
-#define SPHERE 4
+#define COW    1
+#define BUNNY  2
+#define SPHERE 3
+#define CUBE   4
 uniform int object_id;
 
-// Par‚metros da axis-aligned bounding box (AABB) do modelo
+// Par√¢metros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 bbox_min;
 uniform vec4 bbox_max;
 
-// Vari·veis para acesso das imagens de textura
+// Vari√°veis para acesso das imagens de textura
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 
-// O valor de saÌda ("out") de um Fragment Shader È a cor final do fragmento.
+// O valor de sa√≠da ("out") de um Fragment Shader √© a cor final do fragmento.
 out vec3 color;
 
 // Constantes
@@ -44,26 +44,26 @@ out vec3 color;
 
 void main()
 {
-    // Obtemos a posiÁ„o da c‚mera utilizando a inversa da matriz que define o
-    // sistema de coordenadas da c‚mera.
+    // Obtemos a posi√ß√£o da c√¢mera utilizando a inversa da matriz que define o
+    // sistema de coordenadas da c√¢mera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 camera_position = inverse(view) * origin;
 
-    // O fragmento atual È coberto por um ponto que percente ‡ superfÌcie de um
-    // dos objetos virtuais da cena. Este ponto, p, possui uma posiÁ„o no
-    // sistema de coordenadas global (World coordinates). Esta posiÁ„o È obtida
-    // atravÈs da interpolaÁ„o, feita pelo rasterizador, da posiÁ„o de cada
-    // vÈrtice.
+    // O fragmento atual √© coberto por um ponto que percente √† superf√≠cie de um
+    // dos objetos virtuais da cena. Este ponto, p, possui uma posi√ß√£o no
+    // sistema de coordenadas global (World coordinates). Esta posi√ß√£o √© obtida
+    // atrav√©s da interpola√ß√£o, feita pelo rasterizador, da posi√ß√£o de cada
+    // v√©rtice.
     vec4 p = position_world;
 
     // Normal do fragmento atual, interpolada pelo rasterizador a partir das
-    // normais de cada vÈrtice.
+    // normais de cada v√©rtice.
     vec4 n = normalize(normal);
 
-    // Vetor que define o sentido da fonte de luz em relaÁ„o ao ponto atual.
+    // Vetor que define o sentido da fonte de luz em rela√ß√£o ao ponto atual.
     vec4 l = normalize(vec4(1.0,1.0,0.0,0.0));
 
-    // Vetor que define o sentido da c‚mera em relaÁ„o ao ponto atual.
+    // Vetor que define o sentido da c√¢mera em rela√ß√£o ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
     // Coordenadas de textura U e V
@@ -73,17 +73,17 @@ void main()
     if ( object_id == SPHERE )
     {
         // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
-        // projeÁ„o esfÈrica EM COORDENADAS DO MODELO. Utilize como referÍncia
+        // proje√ß√£o esf√©rica EM COORDENADAS DO MODELO. Utilize como refer√™ncia
         // o slide 139 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
-        // A esfera que define a projeÁ„o deve estar centrada na posiÁ„o
+        // A esfera que define a proje√ß√£o deve estar centrada na posi√ß√£o
         // "bbox_center" definida abaixo.
 
-        // VocÍ deve utilizar:
-        //   funÁ„o 'length( )' : comprimento Euclidiano de um vetor
-        //   funÁ„o 'atan( , )' : arcotangente. Veja https://en.wikipedia.org/wiki/Atan2.
-        //   funÁ„o 'asin( )'   : seno inverso.
+        // Voc√™ deve utilizar:
+        //   fun√ß√£o 'length( )' : comprimento Euclidiano de um vetor
+        //   fun√ß√£o 'atan( , )' : arcotangente. Veja https://en.wikipedia.org/wiki/Atan2.
+        //   fun√ß√£o 'asin( )'   : seno inverso.
         //   constante M_PI
-        //   vari·vel position_model
+        //   vari√°vel position_model
 
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
         vec4 p_vector = position_model - bbox_center;
@@ -102,11 +102,11 @@ void main()
     else if ( object_id == BUNNY )
     {
         // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
-        // projeÁ„o planar XY em COORDENADAS DO MODELO. Utilize como referÍncia
+        // proje√ß√£o planar XY em COORDENADAS DO MODELO. Utilize como refer√™ncia
         // o slide 106 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf",
-        // e tambÈm use as vari·veis min*/max* definidas abaixo para normalizar
+        // e tamb√©m use as vari√°veis min*/max* definidas abaixo para normalizar
         // as coordenadas de textura U e V dentro do intervalo [0,1]. Para
-        // tanto, veja por exemplo o mapeamento da vari·vel 'h' no slide 149 do
+        // tanto, veja por exemplo o mapeamento da vari√°vel 'h' no slide 149 do
         // documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
 
         float minx = bbox_min.x;
@@ -128,18 +128,17 @@ void main()
         V = texcoords.y;
     }
 
-    // Obtemos a reflet‚ncia difusa a partir da leitura da imagem TextureImage0
+    // Obtemos a reflet√¢ncia difusa a partir da leitura da imagem TextureImage0
     vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
 
-    // EquaÁ„o de IluminaÁ„o
+    // Equa√ß√£o de Ilumina√ß√£o
     float lambert = max(0,dot(n,l));
     float darklambert = max(0, -dot(n,l));
 
-    //color = Kd0 * (lambert + 0.01) + Kd1 * (1 - pow(lambert,0.2));
-    color = vec3(0.0f, 0.0f, 0.0f);
+    color = Kd0 * (lambert + 0.01) + Kd1 * (1 - pow(lambert,0.2));
 
-    // Cor final com correÁ„o gamma, considerando monitor sRGB.
+    // Cor final com corre√ß√£o gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 }
