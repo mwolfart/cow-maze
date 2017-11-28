@@ -70,21 +70,11 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
+    // Equação de Iluminação
+    float lambert = max(0,dot(n,l));
+
     if ( object_id == SPHERE )
     {
-        // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
-        // projeção esférica EM COORDENADAS DO MODELO. Utilize como referência
-        // o slide 139 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
-        // A esfera que define a projeção deve estar centrada na posição
-        // "bbox_center" definida abaixo.
-
-        // Você deve utilizar:
-        //   função 'length( )' : comprimento Euclidiano de um vetor
-        //   função 'atan( , )' : arcotangente. Veja https://en.wikipedia.org/wiki/Atan2.
-        //   função 'asin( )'   : seno inverso.
-        //   constante M_PI
-        //   variável position_model
-
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
         vec4 p_vector = position_model - bbox_center;
 
@@ -98,17 +88,12 @@ void main()
 
         U = (theta + M_PI) / (2 * M_PI);
         V = (phi + M_PI/2) / M_PI;
+
+        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd0 * (lambert + 0.01);
     }
     else if ( object_id == BUNNY )
     {
-        // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
-        // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência
-        // o slide 106 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf",
-        // e também use as variáveis min*/max* definidas abaixo para normalizar
-        // as coordenadas de textura U e V dentro do intervalo [0,1]. Para
-        // tanto, veja por exemplo o mapeamento da variável 'h' no slide 149 do
-        // documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
-
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
 
@@ -120,23 +105,28 @@ void main()
 
         U = (position_model[0] - minx)/(maxx - minx);
         V = (position_model[1] - miny)/(maxy - miny);
+
+        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd0 * (lambert + 0.01);
     }
     else if ( object_id == PLANE )
     {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        int number_of_repetitions = 16;
+        float period = 1.0f/number_of_repetitions;
+        U = mod(texcoords.x, period)*number_of_repetitions;
+        V = mod(texcoords.y, period)*number_of_repetitions;
+
+        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd0 * (lambert + 0.01);
+    }
+    else if ( object_id == CUBE )
+    {
         U = texcoords.x;
         V = texcoords.y;
+
+        vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
+        color = Kd1 * (lambert + 0.01);
     }
-
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-    vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-
-    // Equação de Iluminação
-    float lambert = max(0,dot(n,l));
-    float darklambert = max(0, -dot(n,l));
-
-    color = Kd0 * (lambert + 0.01) + Kd1 * (1 - pow(lambert,0.2));
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
