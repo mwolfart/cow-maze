@@ -41,6 +41,7 @@
 #define MOVEMENT_AMOUNT 0.02f
 #define ROTATION_SPEED_X 0.01f
 #define ROTATION_SPEED_Y 0.004f
+#define PI 3.14159265358979323846
 
 ////////////////
 // ESTRUTURAS //
@@ -103,6 +104,8 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
+void Draw(const char* object_name, int object_id, glm::mat4 model);
+void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
@@ -157,7 +160,7 @@ float g_CameraDistance = 2.5f;
 
 // Variáveis da câmera virtual
 glm::vec4 camera_position_c  = glm::vec4(2.0f,2.0f,2.0f,1.0f); // Ponto "c", centro da câmera
-glm::vec4 camera_view_vector = glm::vec4(-2.0f,-2.0f,-2.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
+glm::vec4 camera_view_vector = glm::vec4(2.0f,-2.0f,2.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 glm::vec4 camera_u_vector = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
 
@@ -311,18 +314,13 @@ int main(int argc, char* argv[])
         #define BUNNY  2
         #define SPHERE 3
         #define CUBE   4
+        #define PLAYER 5
 
         ///////////////////
         // VACA: JOGADOR //
         ///////////////////
 
-        // How can we get the model size?
-        model = Matrix_Translate(8.0f,-0.6f,2.0f)
-                * Matrix_Scale(0.6f, 0.6f, 0.6f)
-                * Matrix_Rotate_Y(3.14f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, COW);
-        DrawVirtualObject("cow");
+        DrawPlayer(9.0f, 0.0f, 2.0f, -PI/2, 0.4f);
 
         ///////////
         // PLANO //
@@ -330,9 +328,7 @@ int main(int argc, char* argv[])
 
         model = Matrix_Translate(0.0f,-1.0f,0.0f)
                 * Matrix_Scale(16.0f, 1.0f, 16.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
+        Draw("plane", PLANE, model);
 
         ////////////////////
         // BLOCOS SÓLIDOS //
@@ -341,30 +337,22 @@ int main(int argc, char* argv[])
 
         for(i = 0; i < 10; i++) {
             model = Matrix_Translate(0.5f + i,-0.5f,0.5f);
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, CUBE);
-            DrawVirtualObject("cube");
+            Draw("cube", CUBE, model);
         }
 
         for(j = 0; j < 10; j++) {
             model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, CUBE);
-            DrawVirtualObject("cube");
+            Draw("cube", CUBE, model);
         }
 
         for(i = i; i > 0; i--) {
             model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, CUBE);
-            DrawVirtualObject("cube");
+            Draw("cube", CUBE, model);
         }
 
         for(j = j; j > 0; j--) {
             model = Matrix_Translate(0.5f,-0.5f,0.5f + j);
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, CUBE);
-            DrawVirtualObject("cube");
+            Draw("cube", CUBE, model);
         }
 
         //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
@@ -384,6 +372,106 @@ int main(int argc, char* argv[])
 
     // Fim do programa
     return 0;
+}
+
+// Função que desenha um objeto na cena
+// Usada para despoluir
+void Draw(const char* object_name, int object_id, glm::mat4 model) {
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, object_id);
+    DrawVirtualObject(object_name);
+}
+
+// Função que desenha o jogador usando transformações hierárquicas
+// Desenha na posição dada, com escala dada e ângulo de rotação dado
+void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
+    glm::mat4 model = Matrix_Identity();
+
+    model = Matrix_Translate(x, y, z) * Matrix_Rotate_Y(angle_y);
+    PushMatrix(model);
+        model = model * Matrix_Scale(0.8f * scale, 1.1f * scale, 0.2f * scale);
+        Draw("cube", PLAYER, model);
+    PopMatrix(model);
+    PushMatrix(model);
+        model = model * Matrix_Translate(-0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação do braço direito
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço direito
+            Draw("cube", PLAYER, model);
+        PopMatrix(model);
+        PushMatrix(model);
+            model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço direito
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço direito
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+            PushMatrix(model);
+                model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão direita
+                model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+        PopMatrix(model);
+    PopMatrix(model);
+    PushMatrix(model);
+        model = model * Matrix_Translate(0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação para o braço esquerdo
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço esquerdo
+            Draw("cube", PLAYER, model);
+        PopMatrix(model);
+        PushMatrix(model);
+            model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço esquerdo
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço esquerdo
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+            PushMatrix(model);
+                model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão esquerda
+                model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+        PopMatrix(model);
+    PopMatrix(model);
+    PushMatrix(model);
+        model = model * Matrix_Translate(-0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna direita
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa direita
+            Draw("cube", PLAYER, model);
+        PopMatrix(model);
+        PushMatrix(model);
+            model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela direita
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela direita
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+            PushMatrix(model);
+                model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé direito
+                model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé direito
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+        PopMatrix(model);
+    PopMatrix(model);
+    PushMatrix(model);
+        model = model * Matrix_Translate(0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna esquerda
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa esquerda
+            Draw("cube", PLAYER, model);
+        PopMatrix(model);
+        PushMatrix(model);
+            model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela esquerda
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela esquerda
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+            PushMatrix(model);
+                model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé esquerdo
+                model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé esquerdo
+                Draw("cube", PLAYER, model);
+            PopMatrix(model);
+        PopMatrix(model);
+    PopMatrix(model);
+    model = model * Matrix_Rotate_Z(3.14);
+    model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação para a cabeça
+    model = model * Matrix_Scale(0.35f * scale, 0.35f * scale, 0.35f * scale); // Escalamento da cabeça
+    Draw("cube", PLAYER, model);
 }
 
 // Função que carrega uma imagem para ser utilizada como textura
@@ -905,15 +993,16 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     double dx = xpos - g_LastCursorPosX;
     double dy = ypos - g_LastCursorPosY;
 
-    if (g_LeftMouseButtonPressed) {
-        // Agora atualizamos o vetor view e o vetor u conforme a variação do cursor
-        // Girar na horizontal (olhar pros lados) = rotação em torno do eixo UP
-        camera_view_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_view_vector;
-        camera_u_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_u_vector;
+    // Agora atualizamos o vetor view e o vetor u conforme a variação do cursor
+    // Girar na horizontal (olhar pros lados) = rotação em torno do eixo UP
+    camera_view_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_view_vector;
+    camera_u_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_u_vector;
 
-        // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
-        camera_view_vector = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;
-    }
+    // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
+    // Somente rotaciona se não atingiu os limites (cima/baixo)
+    glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
+    if ((rotated_camera[1] >= -PI) && (rotated_camera[1] <= PI))
+        camera_view_vector = rotated_camera;
 
     // Atualizamos as variáveis globais para armazenar a posição atual do
     // cursor como sendo a última posição conhecida do cursor.
