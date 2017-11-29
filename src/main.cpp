@@ -155,14 +155,23 @@ bool g_UsePerspectiveProjection = true;
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
 
-// Distância da câmera para a origem (inicializada)
-float g_CameraDistance = 2.5f;
+// Variáveis de posição do jogador
+glm::vec4 player_position = glm::vec4(9.0f, 0.0f, 2.0f, 1.0f);
+glm::vec4 player_direction = glm::vec4(0.0f, 0.0f, 2.0f, 0.0f);
 
-// Variáveis da câmera virtual
-glm::vec4 camera_position_c  = glm::vec4(2.0f,2.0f,2.0f,1.0f); // Ponto "c", centro da câmera
-glm::vec4 camera_view_vector = glm::vec4(2.0f,-2.0f,2.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
+// CÂMERA LOOKAT
+float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float g_CameraDistance = 2.5f; // Distância da câmera para a origem
+
+// CÂMERA FIRST PERSON
+glm::vec4 camera_position_c  = glm::vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 glm::vec4 camera_u_vector = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
+
+// Variável de controle da câmera
+bool g_useFirstPersonCamera = true;
 
 // Variáveis de controle do cursor
 double g_LastCursorPosX, g_LastCursorPosY;
@@ -287,13 +296,14 @@ int main(int argc, char* argv[])
 
         // Movimentação em primeira pessoa
         if (key_w_pressed)
-            camera_position_c += MOVEMENT_AMOUNT * camera_view_vector;
+            player_position += MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
         if (key_s_pressed)
-            camera_position_c -= MOVEMENT_AMOUNT * camera_view_vector;
+            player_position -= MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
         if (key_a_pressed)
-            camera_position_c -= MOVEMENT_AMOUNT * camera_u_vector;
+            player_position -= MOVEMENT_AMOUNT * camera_u_vector;
         if (key_d_pressed)
-            camera_position_c += MOVEMENT_AMOUNT * camera_u_vector;
+            player_position += MOVEMENT_AMOUNT * camera_u_vector;
+        camera_position_c = player_position;
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
@@ -320,7 +330,7 @@ int main(int argc, char* argv[])
         // VACA: JOGADOR //
         ///////////////////
 
-        DrawPlayer(9.0f, 0.0f, 2.0f, -PI/2, 0.4f);
+        DrawPlayer(player_position[0], player_position[1], player_position[2], acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))), 0.4f);
 
         ///////////
         // PLANO //
@@ -997,11 +1007,12 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // Girar na horizontal (olhar pros lados) = rotação em torno do eixo UP
     camera_view_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_view_vector;
     camera_u_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_u_vector;
+    player_direction = glm::vec4(camera_view_vector[0], 1.0f, camera_view_vector[2], 0.0f);
 
     // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
     // Somente rotaciona se não atingiu os limites (cima/baixo)
     glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
-    if ((rotated_camera[1] >= -PI) && (rotated_camera[1] <= PI))
+    if ((rotated_camera[1] >= -PI/2) && (rotated_camera[1] <= PI/2))
         camera_view_vector = rotated_camera;
 
     // Atualizamos as variáveis globais para armazenar a posição atual do
