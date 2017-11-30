@@ -1030,7 +1030,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
         // Somente rotaciona se não atingiu os limites (cima/baixo)
         glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
-        if ((rotated_camera[1] >= -PI/2) && (rotated_camera[1] <= PI/2))
+        if ((rotated_camera[1] >= -PI/1.35) && (rotated_camera[1] <= PI/1.35))
             camera_view_vector = rotated_camera;
     } else {
       // Atualizamos parâmetros da câmera com os deslocamentos
@@ -1041,11 +1041,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         float phimax = PI/2;
         float phimin = -phimax;
 
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
+        if (g_CameraPhi >= phimax)
+            g_CameraPhi = phimax - 0.01f;
 
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
+        if (g_CameraPhi <= phimin)
+            g_CameraPhi = phimin + 0.01f;
     }
 
     // Atualizamos as variáveis globais para armazenar a posição atual do
