@@ -1,9 +1,6 @@
 //     Universidade Federal do Rio Grande do Sul
 //             Instituto de Informática
 //       Departamento de Informática Aplicada
-//
-// INF01047 Fundamentos de Computação Gráfica 2017/2
-//               Prof. Eduardo Gastal
 
 #include <cmath>
 #include <cstdio>
@@ -43,14 +40,29 @@
 #define ROTATION_SPEED_Y 0.004f
 #define PI 3.14159265358979323846
 
+// Tipos de objetos
+#define PLANE  0
+#define COW    1
+#define BUNNY  2
+#define SPHERE 3
+#define CUBE   4
+#define PLAYER 5
+
+// Tipos de colisõee
+#define COLLISION_NONE  0
+#define COLLISION_SOLID 1
+#define COLLISION_WATER 2
+#define COLLISION_LAVA  3
+#define COLLISION_LOCK  4
+#define COLLISION_OTHER -1
+
 ////////////////
 // ESTRUTURAS //
 ////////////////
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
-struct SceneObject
-{
+struct SceneObject {
     std::string  name;        // Nome do objeto
     void*        first_index; // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     int          num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
@@ -62,8 +74,7 @@ struct SceneObject
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj".
-struct ObjModel
-{
+struct ObjModel {
     tinyobj::attrib_t                 attrib;
     std::vector<tinyobj::shape_t>     shapes;
     std::vector<tinyobj::material_t>  materials;
@@ -86,6 +97,20 @@ struct ObjModel
     }
 };
 
+// Estrutura que guarda uma lista de objetos presentes
+struct MapObject {
+    int object_type;
+    glm::vec3 object_position;
+    glm::vec3 object_size;
+};
+
+// Estrutura que define a planta de um nível
+struct Level {
+    int height;
+    int width;
+    std::vector<std::vector<char>> plant;
+};
+
 ///////////////////////////
 // DECLARAÇÃO DE FUNÇÕES //
 ///////////////////////////
@@ -96,7 +121,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
-void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
+void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model); // Desenha um objeto armazenado em g_VirtualScene
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
@@ -104,8 +129,14 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void Draw(const char* object_name, int object_id, glm::mat4 model);
+void AddObjectToMap(int obj_id, glm::vec3 obj_position, glm::vec3 obj_size);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
+int GetCollisionTypeInPosition(glm::vec4 position);
+Level LoadLevelFromFile(const char* filepath);
+void DrawMap(std::vector<std::vector<char>> plant);
+glm::vec4 GetPlayerCoordinates(std::vector<std::vector<char>> plant);
+
+void PrintGPUInfoInTerminal();
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
@@ -132,7 +163,6 @@ void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 ///////////////////////
 // VARIÁVEIS GLOBAIS //
@@ -140,9 +170,12 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 std::map<std::string, SceneObject> g_VirtualScene;
 std::stack<glm::mat4>  g_MatrixStack;
+// Vetor que contém dados sobre os objetos dentro do mapa (usado para tratar colisões)
+std::vector<MapObject> map_objects;
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
+int g_WindowWidth = 800, g_WindowHeight = 600;
 
 // Ângulos de Euler
 float g_AngleX = 0.0f;
@@ -153,10 +186,10 @@ float g_AngleZ = 0.0f;
 bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
-bool g_ShowInfoText = true;
+bool g_ShowInfoText = false;
 
 // Variáveis de posição do jogador
-glm::vec4 player_position = glm::vec4(9.0f, 0.0f, 2.0f, 1.0f);
+glm::vec4 player_position;
 glm::vec4 player_direction = glm::vec4(0.0f, 0.0f, 2.0f, 0.0f);
 
 // CÂMERA LOOKAT
@@ -169,7 +202,7 @@ glm::vec4 camera_position_c  = glm::vec4(player_position[0], player_position[1] 
 glm::vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 glm::vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
-glm::vec4 camera_lookat_l    = player_position;
+glm::vec4 camera_lookat_l;
 
 // Variável de controle da câmera
 bool g_useFirstPersonCamera = false;
@@ -216,7 +249,7 @@ int main(int argc, char* argv[])
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "The Homogeneous Cow Maze", NULL, NULL);
+    window = glfwCreateWindow(g_WindowWidth, g_WindowHeight, "The Homogeneous Cow Maze", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -228,45 +261,37 @@ int main(int argc, char* argv[])
     glfwSetKeyCallback(window, KeyCallback);
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     glfwSetCursorPosCallback(window, CursorPosCallback);
-    glfwSetScrollCallback(window, ScrollCallback);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    glfwSetWindowSize(window, 800, 600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+    glfwSetWindowSize(window, g_WindowWidth, g_WindowHeight); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
 
-    // Imprimimos no terminal informações sobre a GPU do sistema
-    const GLubyte *vendor      = glGetString(GL_VENDOR);
-    const GLubyte *renderer    = glGetString(GL_RENDERER);
-    const GLubyte *glversion   = glGetString(GL_VERSION);
-    const GLubyte *glslversion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-    printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
-
-    // Carregamento de shaders
+    PrintGPUInfoInTerminal();
     LoadShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/textures/ground.png");      // TextureImage0
+    LoadTextureImage("../../data/textures/ground.png"); // TextureImage0
     LoadTextureImage("../../data/textures/wall.png");   // TextureImage1
     LoadTextureImage("../../data/textures/cow.png");    // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
+    ObjModel spheremodel("../../data/objects/sphere.obj");
     ComputeNormals(&spheremodel);
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
-    ObjModel bunnymodel("../../data/bunny.obj");
+    ObjModel bunnymodel("../../data/objects/bunny.obj");
     ComputeNormals(&bunnymodel);
     BuildTrianglesAndAddToVirtualScene(&bunnymodel);
 
-    ObjModel planemodel("../../data/plane.obj");
+    ObjModel planemodel("../../data/objects/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
-    ObjModel cubemodel("../../data/cube.obj");
+    ObjModel cubemodel("../../data/objects/cube.obj");
     ComputeNormals(&cubemodel);
     BuildTrianglesAndAddToVirtualScene(&cubemodel);
 
-    ObjModel cowmodel("../../data/cow.obj");
+    ObjModel cowmodel("../../data/objects/cow.obj");
     ComputeNormals(&cowmodel);
     BuildTrianglesAndAddToVirtualScene(&cowmodel);
 
@@ -279,13 +304,18 @@ int main(int argc, char* argv[])
     // Inicializamos o código para renderização de texto.
     TextRendering_Init();
 
-    // Habilitamos o Z-buffer. Veja slides 66 à 68 do documento "Aula_13_Clipping_and_Culling.pdf".
+    // Habilitamos o Z-buffer.
     glEnable(GL_DEPTH_TEST);
 
-    // Habilitamos o Backface Culling. Veja slides 22 à 34 do documento "Aula_13_Clipping_and_Culling.pdf".
+    // Habilitamos o Backface Culling.
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+
+    // Carrega nível um
+    Level level_one = LoadLevelFromFile("../../data/levels/1");
+    player_position = GetPlayerCoordinates(level_one.plant);
+    camera_lookat_l = player_position;
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -296,15 +326,30 @@ int main(int argc, char* argv[])
         glUseProgram(program_id);
 
         // Movimentação do personagem
-        if (key_w_pressed)
-            player_position += MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-        if (key_s_pressed)
-            player_position -= MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-        if (key_a_pressed)
-            player_position -= MOVEMENT_AMOUNT * camera_u_vector;
-        if (key_d_pressed)
-            player_position += MOVEMENT_AMOUNT * camera_u_vector;
+        glm::vec4 target_position;
 
+        if (key_w_pressed) {
+            target_position = player_position + MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+                player_position = target_position;
+        }
+        if (key_s_pressed) {
+            target_position = player_position - MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+                player_position = target_position;
+        }
+        if (key_a_pressed) {
+            target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+                player_position = target_position;
+        }
+        if (key_d_pressed) {
+            target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+                player_position = target_position;
+        }
+
+        // Controle do tipo de câmera
         if (g_useFirstPersonCamera) {
             camera_position_c = player_position;
         }
@@ -336,21 +381,29 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define PLANE  0
-        #define COW    1
-        #define BUNNY  2
-        #define SPHERE 3
-        #define CUBE   4
-        #define PLAYER 5
+        glm::vec3 obj_size;
+        glm::vec3 obj_position;
 
-        ///////////////////
-        // VACA: JOGADOR //
-        ///////////////////
+        ///////////
+        // PLANO //
+        ///////////
+
+        model = Matrix_Translate(0.0f,-1.0f,0.0f)
+                * Matrix_Scale(level_one.width/2.0f, 1.0f, level_one.height/2.0f);
+        DrawVirtualObject("plane", PLANE, model);
+
+        DrawMap(level_one.plant);
+
+        /////////////
+        // JOGADOR //
+        /////////////
 
         float vecangle = acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
         if (player_direction[2] > 0.0f)
             vecangle = -vecangle;
         DrawPlayer(player_position[0], player_position[1], player_position[2], vecangle - PI/2, 0.4f);
+
+        /*
 
         ///////////
         // PLANO //
@@ -358,7 +411,7 @@ int main(int argc, char* argv[])
 
         model = Matrix_Translate(0.0f,-1.0f,0.0f)
                 * Matrix_Scale(16.0f, 1.0f, 16.0f);
-        Draw("plane", PLANE, model);
+        DrawVirtualObject("plane", PLANE, model);
 
         ////////////////////
         // BLOCOS SÓLIDOS //
@@ -366,30 +419,32 @@ int main(int argc, char* argv[])
         int i, j;
 
         for(i = 0; i < 10; i++) {
-            model = Matrix_Translate(0.5f + i,-0.5f,0.5f);
-            Draw("cube", CUBE, model);
+            model = Matrix_Translate(0.5f+i,-0.5f,0.5f);
+            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f), glm::vec3(1.0f, 1.0f, 1.0f));
+            DrawVirtualObject("cube", CUBE, model);
         }
 
         for(j = 0; j < 10; j++) {
-            model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
-            Draw("cube", CUBE, model);
+            model = Matrix_Translate(0.5f+i,-0.5f,0.5f+j);
+            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f+j), glm::vec3(1.0f, 1.0f, 1.0f));
+            DrawVirtualObject("cube", CUBE, model);
         }
 
         for(i = i; i > 0; i--) {
-            model = Matrix_Translate(0.5f + i,-0.5f,0.5f + j);
-            Draw("cube", CUBE, model);
+            model = Matrix_Translate(0.5f+i,-0.5f,0.5f+j);
+            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f+j), glm::vec3(1.0f, 1.0f, 1.0f));
+            DrawVirtualObject("cube", CUBE, model);
         }
 
-        for(j = j; j > 0; j--) {
-            model = Matrix_Translate(0.5f,-0.5f,0.5f + j);
-            Draw("cube", CUBE, model);
+        if (g_ShowInfoText) {
+            glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
+            TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
+            TextRendering_ShowEulerAngles(window);
+            TextRendering_ShowProjection(window);
+            TextRendering_ShowFramesPerSecond(window);
         }
 
-        //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
-        //TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
-        TextRendering_ShowEulerAngles(window);
-        TextRendering_ShowProjection(window);
-        TextRendering_ShowFramesPerSecond(window);
+        */
 
         glfwSwapBuffers(window);
 
@@ -404,12 +459,126 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-// Função que desenha um objeto na cena
-// Usada para despoluir
-void Draw(const char* object_name, int object_id, glm::mat4 model) {
-    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(object_id_uniform, object_id);
-    DrawVirtualObject(object_name);
+// Função que determina o tipo de colisão em um dado ponto
+int GetCollisionTypeInPosition(glm::vec4 position) {
+    unsigned int obj_index = 0;
+    bool collision_found = false;
+
+    while(obj_index < map_objects.size() && !collision_found) {
+        glm::vec3 obj_position = map_objects[obj_index].object_position;
+        glm::vec3 obj_size = map_objects[obj_index].object_size;
+        glm::vec3 obj_start = obj_position - obj_size / 2.0f;
+        glm::vec3 obj_end = obj_position + obj_size / 2.0f;
+        float tol = 0.3f;
+
+        bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
+        //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
+        bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
+
+        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
+            collision_found = true;
+
+        obj_index++;
+    }
+
+    if (!collision_found)
+        return COLLISION_NONE;
+    else {
+        switch(map_objects[obj_index - 1].object_type) {
+        case CUBE:
+            return COLLISION_SOLID;
+        default:
+            return COLLISION_OTHER;
+        }
+    }
+}
+
+// Função que carrega um nível a partir de um arquivo (parser)
+Level LoadLevelFromFile(const char* filepath) {
+    Level loaded_level;
+
+    printf("Carregando nivel \"%s\"... ", filepath);
+
+    std::ifstream level_file;
+    level_file.open(filepath);
+    if (!level_file.is_open()) {
+        printf("Falha ao abrir arquivo.\n");
+        return loaded_level;
+    }
+    else {
+        /* TODO handle invalid files */
+        std::string width, height;
+        getline(level_file, width);
+        getline(level_file, height);
+
+        loaded_level.width = atoi(width.c_str());
+        loaded_level.height = atoi(height.c_str());
+        if (loaded_level.width < 0 || loaded_level.height < 0) {
+            printf("Largura e altura inválidas.\n");
+            return loaded_level; /* TODO handle */
+        }
+
+        int line=0, col=0;
+
+        while (line < loaded_level.height) {
+            std::string file_line;
+            getline(level_file, file_line);
+            std::vector<char> map_line;
+
+            while (col < loaded_level.width) {
+                map_line.push_back(file_line[col]);
+                col++;
+            }
+
+            loaded_level.plant.push_back(map_line);
+            col = 0;
+            map_line.clear();
+            line++;
+        }
+
+        printf("OK!\n");
+        level_file.close();
+        return loaded_level;
+    }
+}
+
+void DrawMap(std::vector<std::vector<char>> plant) {
+    for(unsigned int line = 0; line < plant.size(); line++) {
+        for(unsigned int col = 0; col < plant[line].size(); col++) {
+            switch(plant[line][col]) {
+            case 'B': {
+                glm::mat4 model = Matrix_Translate(-(15.5f - col), -0.5f, -(15.5f - line));
+                AddObjectToMap(CUBE, glm::vec3(-(15.5f - col), -0.5f, -(15.5f - line)), glm::vec3(1.0f, 1.0f, 1.0f));
+                DrawVirtualObject("cube", CUBE, model);
+                break;
+            }
+            case 'P':
+            case 'F':
+            default:
+                break;
+            }
+        }
+    }
+}
+
+glm::vec4 GetPlayerCoordinates(std::vector<std::vector<char>> plant) {
+    for(unsigned int line = 0; line < plant.size(); line++) {
+        for(unsigned int col = 0; col < plant[line].size(); col++) {
+            if(plant[line][col] == 'P')
+                return glm::vec4(-(15.5f - col), 0.0f, -(15.5f - line), 1.0f);
+        }
+    }
+
+    return glm::vec4(0.5f, 0.0f, 0.5f, 1.0f);
+}
+
+// Função que adiciona um objeto ao mapa
+void AddObjectToMap(int obj_id, glm::vec3 obj_position, glm::vec3 obj_size) {
+    MapObject new_object;
+    new_object.object_type = obj_id;
+    new_object.object_size = obj_size;
+    new_object.object_position = obj_position;
+    map_objects.push_back(new_object);
 }
 
 // Função que desenha o jogador usando transformações hierárquicas
@@ -420,24 +589,24 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
     model = Matrix_Translate(x, y, z) * Matrix_Rotate_Y(angle_y);
     PushMatrix(model);
         model = model * Matrix_Scale(0.8f * scale, 1.1f * scale, 0.2f * scale);
-        Draw("cube", PLAYER, model);
+        DrawVirtualObject("cube", PLAYER, model);
     PopMatrix(model);
     PushMatrix(model);
         model = model * Matrix_Translate(-0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação do braço direito
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço direito
-            Draw("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço direito
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço direito
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão direita
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -445,18 +614,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação para o braço esquerdo
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço esquerdo
-            Draw("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço esquerdo
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço esquerdo
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão esquerda
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -464,18 +633,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(-0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna direita
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa direita
-            Draw("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela direita
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela direita
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé direito
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé direito
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -483,30 +652,29 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna esquerda
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa esquerda
-            Draw("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela esquerda
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela esquerda
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé esquerdo
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé esquerdo
-                Draw("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
     model = model * Matrix_Rotate_Z(3.14);
     model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação para a cabeça
     model = model * Matrix_Scale(0.35f * scale, 0.35f * scale, 0.35f * scale); // Escalamento da cabeça
-    Draw("cube", PLAYER, model);
+    DrawVirtualObject("cube", PLAYER, model);
 }
 
 // Função que carrega uma imagem para ser utilizada como textura
-void LoadTextureImage(const char* filename)
-{
+void LoadTextureImage(const char* filename) {
     printf("Carregando imagem \"%s\"... ", filename);
 
     // Primeiro fazemos a leitura da imagem do disco
@@ -558,8 +726,10 @@ void LoadTextureImage(const char* filename)
 
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
 // dos objetos na função BuildTrianglesAndAddToVirtualScene().
-void DrawVirtualObject(const char* object_name)
-{
+void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) {
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, object_id);
+
     // "Ligamos" o VAO. Informamos que queremos utilizar os atributos de
     // vértices apontados pelo VAO criado pela função BuildTrianglesAndAddToVirtualScene(). Veja
     // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
@@ -591,8 +761,7 @@ void DrawVirtualObject(const char* object_name)
 
 // Função que carrega os shaders de vértices e de fragmentos que serão
 // utilizados para renderização.
-void LoadShadersFromFiles()
-{
+void LoadShadersFromFiles() {
     vertex_shader_id = LoadShader_Vertex("../../src/shader_vertex.glsl");
     fragment_shader_id = LoadShader_Fragment("../../src/shader_fragment.glsl");
 
@@ -622,14 +791,12 @@ void LoadShadersFromFiles()
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
-void PushMatrix(glm::mat4 M)
-{
+void PushMatrix(glm::mat4 M) {
     g_MatrixStack.push(M);
 }
 
 // Função que remove a matriz atualmente no topo da pilha e armazena a mesma na variável M
-void PopMatrix(glm::mat4& M)
-{
+void PopMatrix(glm::mat4& M) {
     if ( g_MatrixStack.empty() )
     {
         M = Matrix_Identity();
@@ -643,8 +810,7 @@ void PopMatrix(glm::mat4& M)
 
 // Função que computa as normais de um ObjModel, caso elas não tenham sido
 // especificadas dentro do arquivo ".obj"
-void ComputeNormals(ObjModel* model)
-{
+void ComputeNormals(ObjModel* model) {
     if ( !model->attrib.normals.empty() )
         return;
 
@@ -705,8 +871,7 @@ void ComputeNormals(ObjModel* model)
 }
 
 // Constrói triângulos para futura renderização a partir de um ObjModel.
-void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
-{
+void BuildTrianglesAndAddToVirtualScene(ObjModel* model) {
     GLuint vertex_array_object_id;
     glGenVertexArrays(1, &vertex_array_object_id);
     glBindVertexArray(vertex_array_object_id);
@@ -839,8 +1004,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
 }
 
 // Carrega um Vertex Shader de um arquivo GLSL. Veja definição de LoadShader() abaixo.
-GLuint LoadShader_Vertex(const char* filename)
-{
+GLuint LoadShader_Vertex(const char* filename) {
     // Criamos um identificador (ID) para este shader, informando que o mesmo
     // será aplicado nos vértices.
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
@@ -853,8 +1017,7 @@ GLuint LoadShader_Vertex(const char* filename)
 }
 
 // Carrega um Fragment Shader de um arquivo GLSL . Veja definição de LoadShader() abaixo.
-GLuint LoadShader_Fragment(const char* filename)
-{
+GLuint LoadShader_Fragment(const char* filename) {
     // Criamos um identificador (ID) para este shader, informando que o mesmo
     // será aplicado nos fragmentos.
     GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
@@ -868,8 +1031,7 @@ GLuint LoadShader_Fragment(const char* filename)
 
 // Função auxilar, utilizada pelas duas funções acima. Carrega código de GPU de
 // um arquivo GLSL e faz sua compilação.
-void LoadShader(const char* filename, GLuint shader_id)
-{
+void LoadShader(const char* filename, GLuint shader_id) {
     // Lemos o arquivo de texto indicado pela variável "filename"
     // e colocamos seu conteúdo em memória, apontado pela variável
     // "shader_string".
@@ -938,8 +1100,7 @@ void LoadShader(const char* filename, GLuint shader_id)
 
 // Esta função cria um programa de GPU, o qual contém obrigatoriamente um
 // Vertex Shader e um Fragment Shader.
-GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
-{
+GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
     // Criamos um identificador (ID) para este programa de GPU
     GLuint program_id = glCreateProgram();
 
@@ -988,15 +1149,13 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
 }
 
 // Callback de resizing
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
     g_ScreenRatio = (float)width / height;
 }
 
 // Callback do mouse
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
-{
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
@@ -1009,8 +1168,7 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 }
 
 // Callback de movimentação do cursor
-void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
-{
+void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimentou desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
@@ -1048,21 +1206,19 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
             g_CameraPhi = phimin + 0.01f;
     }
 
+    //SetCursorPos(g_WindowWidth / 2, g_WindowHeight / 2);
+
     // Atualizamos as variáveis globais para armazenar a posição atual do
     // cursor como sendo a última posição conhecida do cursor.
     g_LastCursorPosX = xpos;
     g_LastCursorPosY = ypos;
-}
 
-// Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
-{
+
 }
 
 // Definição da função que será chamada sempre que o usuário pressionar alguma
 // tecla do teclado. Veja http://www.glfw.org/docs/latest/input_guide.html#input_key
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
-{
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod) {
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -1159,23 +1315,23 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
-void ErrorCallback(int error, const char* description)
-{
+void ErrorCallback(int error, const char* description) {
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
+}
+
+void PrintGPUInfoInTerminal() {
+    const GLubyte *vendor      = glGetString(GL_VENDOR);
+    const GLubyte *renderer    = glGetString(GL_RENDERER);
+    const GLubyte *glversion   = glGetString(GL_VERSION);
+    const GLubyte *glslversion = glGetString(GL_SHADING_LANGUAGE_VERSION);
+    printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
 // Esta função recebe um vértice com coordenadas de modelo p_model e passa o
 // mesmo por todos os sistemas de coordenadas armazenados nas matrizes model,
 // view, e projection; e escreve na tela as matrizes e pontos resultantes
 // dessas transformações.
-void TextRendering_ShowModelViewProjection(
-    GLFWwindow* window,
-    glm::mat4 projection,
-    glm::mat4 view,
-    glm::mat4 model,
-    glm::vec4 p_model
-)
-{
+void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model) {
     if ( !g_ShowInfoText )
         return;
 
@@ -1196,8 +1352,7 @@ void TextRendering_ShowModelViewProjection(
 
 // Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
 // g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window)
-{
+void TextRendering_ShowEulerAngles(GLFWwindow* window) {
     if ( !g_ShowInfoText )
         return;
 
@@ -1210,8 +1365,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow* window)
-{
+void TextRendering_ShowProjection(GLFWwindow* window) {
     if ( !g_ShowInfoText )
         return;
 
@@ -1226,8 +1380,7 @@ void TextRendering_ShowProjection(GLFWwindow* window)
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
 // second).
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
-{
+void TextRendering_ShowFramesPerSecond(GLFWwindow* window) {
     if ( !g_ShowInfoText )
         return;
 
@@ -1263,8 +1416,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 // Função para debugging: imprime no terminal todas informações de um modelo
 // geométrico carregado de um arquivo ".obj".
 // Veja: https://github.com/syoyo/tinyobjloader/blob/22883def8db9ef1f3ffb9b404318e7dd25fdbb51/loader_example.cc#L98
-void PrintObjModelInfo(ObjModel* model)
-{
+void PrintObjModelInfo(ObjModel* model) {
   const tinyobj::attrib_t                & attrib    = model->attrib;
   const std::vector<tinyobj::shape_t>    & shapes    = model->shapes;
   const std::vector<tinyobj::material_t> & materials = model->materials;
