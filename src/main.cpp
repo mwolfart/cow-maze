@@ -139,7 +139,7 @@ int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
 void DrawMap(std::vector<std::vector<char>> plant);
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
-
+void DrawTileInCoordinate(char tile_type, float x, float z);
 void PrintGPUInfoInTerminal();
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
@@ -427,32 +427,46 @@ void DrawMap(std::vector<std::vector<char>> plant) {
     float center_x = (map_width-1)/2.0f;
     float center_z = (map_height-1)/2.0f;
 
-    vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
-
     for(int line = 0; line < map_height; line++) {
         for(int col = 0; col < map_width; col++) {
             char current_tile = plant[line][col];
+            float x = -(center_x - col);
+            float z = -(center_z - line);
 
-            switch(current_tile) {
-            // Cubo
-            case 'B': {
-                float x = -(center_x - col);
-                float z = -(center_z - line);
-                float cube_vertical_shift = -0.5f;
+            DrawTileInCoordinate(current_tile, x, z);
 
-                glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
-                AddObjectToMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
-                DrawVirtualObject("cube", CUBE, model);
-                break;
-            }
-            // Player spawn
-            case 'P':
-            // Piso (vazio)
-            case 'F':
-            default:
-                break;
-            }
+
         }
+    }
+}
+
+// Função auxiliar usada para simplificar o desenho do mapa.
+// Desenha um bloco em dada posição
+// CASO SE QUEIRA DEFINIR UM NOVO TIPO DE BLOCO, DEVE-SE
+//  ADICIONAR MAIS UMA CLÁUSULA PARA O SWITCH
+void DrawTileInCoordinate(char tile_type, float x, float z) {
+    // PARÂMETROS DE TAMANHO E POSICIONAMENTO DOS TILES
+
+    // Cubo
+    vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
+    float cube_vertical_shift = -0.5f;
+
+    // PLACEMENT DOS TILES
+    /* Adicione novos tiles abaixo */
+    switch(tile_type) {
+    // Cubo
+    case 'B': {
+        glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
+        AddObjectToMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
+        DrawVirtualObject("cube", CUBE, model);
+        break;
+    }
+    // Player spawn
+    case 'P':
+    // Piso (vazio)
+    case 'F':
+    default:
+        break;
     }
 }
 
