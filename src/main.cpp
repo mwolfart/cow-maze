@@ -56,6 +56,10 @@
 #define COLLISION_LOCK  4
 #define COLLISION_OTHER -1
 
+typedef glm::vec3 vec3;
+typedef glm::vec4 vec4;
+typedef std::string string;
+
 ////////////////
 // ESTRUTURAS //
 ////////////////
@@ -63,13 +67,13 @@
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject {
-    std::string  name;        // Nome do objeto
+    string       name;        // Nome do objeto
     void*        first_index; // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     int          num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
     GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
-    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
-    glm::vec3    bbox_max;
+    vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
+    vec3    bbox_max;
 };
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -84,7 +88,7 @@ struct ObjModel {
     {
         printf("Carregando modelo \"%s\"... ", filename);
 
-        std::string err;
+        string err;
         bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename, basepath, triangulate);
 
         if (!err.empty())
@@ -100,8 +104,8 @@ struct ObjModel {
 // Estrutura que guarda uma lista de objetos presentes
 struct MapObject {
     int object_type;
-    glm::vec3 object_position;
-    glm::vec3 object_size;
+    vec3 object_position;
+    vec3 object_size;
 };
 
 // Estrutura que define a planta de um nível
@@ -129,12 +133,12 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void AddObjectToMap(int obj_id, glm::vec3 obj_position, glm::vec3 obj_size);
+void AddObjectToMap(int obj_id, vec3 obj_position, vec3 obj_size);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
-int GetCollisionTypeInPosition(glm::vec4 position);
+int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
 void DrawMap(std::vector<std::vector<char>> plant);
-glm::vec4 GetPlayerCoordinates(std::vector<std::vector<char>> plant);
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 
 void PrintGPUInfoInTerminal();
 
@@ -143,15 +147,15 @@ void PrintGPUInfoInTerminal();
 void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
-void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
+void TextRendering_PrintString(GLFWwindow* window, const string &str, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale = 1.0f);
-void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintVector(GLFWwindow* window, vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, vec4 v, float x, float y, float scale = 1.0f);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
+void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, vec4 p_model);
 void TextRendering_ShowEulerAngles(GLFWwindow* window);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
@@ -168,7 +172,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 // VARIÁVEIS GLOBAIS //
 ///////////////////////
 
-std::map<std::string, SceneObject> g_VirtualScene;
+std::map<string, SceneObject> g_VirtualScene;
 std::stack<glm::mat4>  g_MatrixStack;
 // Vetor que contém dados sobre os objetos dentro do mapa (usado para tratar colisões)
 std::vector<MapObject> map_objects;
@@ -189,8 +193,8 @@ bool g_UsePerspectiveProjection = true;
 bool g_ShowInfoText = false;
 
 // Variáveis de posição do jogador
-glm::vec4 player_position;
-glm::vec4 player_direction = glm::vec4(0.0f, 0.0f, 2.0f, 0.0f);
+vec4 player_position;
+vec4 player_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f);
 
 // CÂMERA LOOKAT
 float g_CameraTheta = PI; // Ângulo no plano ZX em relação ao eixo Z
@@ -198,11 +202,11 @@ float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 2.5f; // Distância da câmera para a origem
 
 // CÂMERA FIRST PERSON
-glm::vec4 camera_position_c  = glm::vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
-glm::vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
-glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-glm::vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
-glm::vec4 camera_lookat_l;
+vec4 camera_position_c  = vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
+vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
+vec4 camera_up_vector   = vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
+vec4 camera_lookat_l;
 
 // Variável de controle da câmera
 bool g_useFirstPersonCamera = false;
@@ -314,7 +318,7 @@ int main(int argc, char* argv[])
 
     // Carrega nível um
     Level level_one = LoadLevelFromFile("../../data/levels/1");
-    player_position = GetPlayerCoordinates(level_one.plant);
+    player_position = GetPlayerSpawnCoordinates(level_one.plant);
     camera_lookat_l = player_position;
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
@@ -326,15 +330,15 @@ int main(int argc, char* argv[])
         glUseProgram(program_id);
 
         // Movimentação do personagem
-        glm::vec4 target_position;
+        vec4 target_position;
 
         if (key_w_pressed) {
-            target_position = player_position + MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
         }
         if (key_s_pressed) {
-            target_position = player_position - MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
         }
@@ -359,13 +363,13 @@ int main(int argc, char* argv[])
             float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
             float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
-            camera_position_c  = glm::vec4(x+player_position[0],y,z+player_position[2],1.0f); // Ponto "c", centro da câmera
+            camera_position_c  = vec4(x+player_position[0],y,z+player_position[2],1.0f); // Ponto "c", centro da câmera
             camera_lookat_l    = player_position; // Ponto "l", para onde a câmera (look-at) estará sempre olhando
             camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
             camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector);
         }
 
-        player_direction = glm::vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
+        player_direction = vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
@@ -381,9 +385,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        glm::vec3 obj_size;
-        glm::vec3 obj_position;
-
         ///////////
         // PLANO //
         ///////////
@@ -392,62 +393,22 @@ int main(int argc, char* argv[])
                 * Matrix_Scale(level_one.width/2.0f, 1.0f, level_one.height/2.0f);
         DrawVirtualObject("plane", PLANE, model);
 
-        DrawMap(level_one.plant);
-
         /////////////
         // JOGADOR //
         /////////////
 
-        float vecangle = acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
+        float vecangle = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
         if (player_direction[2] > 0.0f)
             vecangle = -vecangle;
         DrawPlayer(player_position[0], player_position[1], player_position[2], vecangle - PI/2, 0.4f);
 
-        /*
+        ///////////////////
+        // RESTO DO MAPA //
+        ///////////////////
 
-        ///////////
-        // PLANO //
-        ///////////
-
-        model = Matrix_Translate(0.0f,-1.0f,0.0f)
-                * Matrix_Scale(16.0f, 1.0f, 16.0f);
-        DrawVirtualObject("plane", PLANE, model);
-
-        ////////////////////
-        // BLOCOS SÓLIDOS //
-        ////////////////////
-        int i, j;
-
-        for(i = 0; i < 10; i++) {
-            model = Matrix_Translate(0.5f+i,-0.5f,0.5f);
-            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f), glm::vec3(1.0f, 1.0f, 1.0f));
-            DrawVirtualObject("cube", CUBE, model);
-        }
-
-        for(j = 0; j < 10; j++) {
-            model = Matrix_Translate(0.5f+i,-0.5f,0.5f+j);
-            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f+j), glm::vec3(1.0f, 1.0f, 1.0f));
-            DrawVirtualObject("cube", CUBE, model);
-        }
-
-        for(i = i; i > 0; i--) {
-            model = Matrix_Translate(0.5f+i,-0.5f,0.5f+j);
-            AddObjectToMap(CUBE, glm::vec3(0.5f+i, -0.5f, 0.5f+j), glm::vec3(1.0f, 1.0f, 1.0f));
-            DrawVirtualObject("cube", CUBE, model);
-        }
-
-        if (g_ShowInfoText) {
-            glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
-            TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
-            TextRendering_ShowEulerAngles(window);
-            TextRendering_ShowProjection(window);
-            TextRendering_ShowFramesPerSecond(window);
-        }
-
-        */
+        DrawMap(level_one.plant);
 
         glfwSwapBuffers(window);
-
         // Verificação de eventos
         glfwPollEvents();
     }
@@ -459,126 +420,40 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-// Função que determina o tipo de colisão em um dado ponto
-int GetCollisionTypeInPosition(glm::vec4 position) {
-    unsigned int obj_index = 0;
-    bool collision_found = false;
-
-    while(obj_index < map_objects.size() && !collision_found) {
-        glm::vec3 obj_position = map_objects[obj_index].object_position;
-        glm::vec3 obj_size = map_objects[obj_index].object_size;
-        glm::vec3 obj_start = obj_position - obj_size / 2.0f;
-        glm::vec3 obj_end = obj_position + obj_size / 2.0f;
-        float tol = 0.3f;
-
-        bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
-        //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
-        bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
-
-        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
-            collision_found = true;
-
-        obj_index++;
-    }
-
-    if (!collision_found)
-        return COLLISION_NONE;
-    else {
-        switch(map_objects[obj_index - 1].object_type) {
-        case CUBE:
-            return COLLISION_SOLID;
-        default:
-            return COLLISION_OTHER;
-        }
-    }
-}
-
-// Função que carrega um nível a partir de um arquivo (parser)
-Level LoadLevelFromFile(const char* filepath) {
-    Level loaded_level;
-
-    printf("Carregando nivel \"%s\"... ", filepath);
-
-    std::ifstream level_file;
-    level_file.open(filepath);
-    if (!level_file.is_open()) {
-        printf("Falha ao abrir arquivo.\n");
-        return loaded_level;
-    }
-    else {
-        /* TODO handle invalid files */
-        std::string width, height;
-        getline(level_file, width);
-        getline(level_file, height);
-
-        loaded_level.width = atoi(width.c_str());
-        loaded_level.height = atoi(height.c_str());
-        if (loaded_level.width < 0 || loaded_level.height < 0) {
-            printf("Largura e altura inválidas.\n");
-            return loaded_level; /* TODO handle */
-        }
-
-        int line=0, col=0;
-
-        while (line < loaded_level.height) {
-            std::string file_line;
-            getline(level_file, file_line);
-            std::vector<char> map_line;
-
-            while (col < loaded_level.width) {
-                map_line.push_back(file_line[col]);
-                col++;
-            }
-
-            loaded_level.plant.push_back(map_line);
-            col = 0;
-            map_line.clear();
-            line++;
-        }
-
-        printf("OK!\n");
-        level_file.close();
-        return loaded_level;
-    }
-}
-
+// Função que desenha o mapa na cena com base na sua planta
 void DrawMap(std::vector<std::vector<char>> plant) {
-    for(unsigned int line = 0; line < plant.size(); line++) {
-        for(unsigned int col = 0; col < plant[line].size(); col++) {
-            switch(plant[line][col]) {
+    int map_height = plant.size();
+    int map_width = plant[0].size();
+    float center_x = (map_width-1)/2.0f;
+    float center_z = (map_height-1)/2.0f;
+
+    vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
+
+    for(int line = 0; line < map_height; line++) {
+        for(int col = 0; col < map_width; col++) {
+            char current_tile = plant[line][col];
+
+            switch(current_tile) {
+            // Cubo
             case 'B': {
-                glm::mat4 model = Matrix_Translate(-(15.5f - col), -0.5f, -(15.5f - line));
-                AddObjectToMap(CUBE, glm::vec3(-(15.5f - col), -0.5f, -(15.5f - line)), glm::vec3(1.0f, 1.0f, 1.0f));
+                float x = -(center_x - col);
+                float z = -(center_z - line);
+                float cube_vertical_shift = -0.5f;
+
+                glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
+                AddObjectToMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
                 DrawVirtualObject("cube", CUBE, model);
                 break;
             }
+            // Player spawn
             case 'P':
+            // Piso (vazio)
             case 'F':
             default:
                 break;
             }
         }
     }
-}
-
-glm::vec4 GetPlayerCoordinates(std::vector<std::vector<char>> plant) {
-    for(unsigned int line = 0; line < plant.size(); line++) {
-        for(unsigned int col = 0; col < plant[line].size(); col++) {
-            if(plant[line][col] == 'P')
-                return glm::vec4(-(15.5f - col), 0.0f, -(15.5f - line), 1.0f);
-        }
-    }
-
-    return glm::vec4(0.5f, 0.0f, 0.5f, 1.0f);
-}
-
-// Função que adiciona um objeto ao mapa
-void AddObjectToMap(int obj_id, glm::vec3 obj_position, glm::vec3 obj_size) {
-    MapObject new_object;
-    new_object.object_type = obj_id;
-    new_object.object_size = obj_size;
-    new_object.object_position = obj_position;
-    map_objects.push_back(new_object);
 }
 
 // Função que desenha o jogador usando transformações hierárquicas
@@ -673,57 +548,6 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
     DrawVirtualObject("cube", PLAYER, model);
 }
 
-// Função que carrega uma imagem para ser utilizada como textura
-void LoadTextureImage(const char* filename) {
-    printf("Carregando imagem \"%s\"... ", filename);
-
-    // Primeiro fazemos a leitura da imagem do disco
-    stbi_set_flip_vertically_on_load(true);
-    int width;
-    int height;
-    int channels;
-    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
-
-    if ( data == NULL )
-    {
-        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
-        std::exit(EXIT_FAILURE);
-    }
-
-    printf("OK (%dx%d).\n", width, height);
-
-    // Agora criamos objetos na GPU com OpenGL para armazenar a textura
-    GLuint texture_id;
-    GLuint sampler_id;
-    glGenTextures(1, &texture_id);
-    glGenSamplers(1, &sampler_id);
-
-    // Veja slide 160 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf"
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // Parâmetros de amostragem da textura. Falaremos sobre eles em uma próxima aula.
-    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // Agora enviamos a imagem lida do disco para a GPU
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-    GLuint textureunit = g_NumLoadedTextures;
-    glActiveTexture(GL_TEXTURE0 + textureunit);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindSampler(textureunit, sampler_id);
-
-    stbi_image_free(data);
-
-    g_NumLoadedTextures += 1;
-}
-
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
 // dos objetos na função BuildTrianglesAndAddToVirtualScene().
 void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) {
@@ -737,8 +561,8 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 
     // Setamos as variáveis "bbox_min" e "bbox_max" do fragment shader
     // com os parâmetros da axis-aligned bounding box (AABB) do modelo.
-    glm::vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
-    glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
+    vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
+    vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
     glUniform4f(bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
     glUniform4f(bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
 
@@ -759,35 +583,69 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
-// Função que carrega os shaders de vértices e de fragmentos que serão
-// utilizados para renderização.
-void LoadShadersFromFiles() {
-    vertex_shader_id = LoadShader_Vertex("../../src/shader_vertex.glsl");
-    fragment_shader_id = LoadShader_Fragment("../../src/shader_fragment.glsl");
+// Função que adiciona um objeto ao mapa
+void AddObjectToMap(int obj_id, vec3 obj_position, vec3 obj_size) {
+    MapObject new_object;
+    new_object.object_type = obj_id;
+    new_object.object_size = obj_size;
+    new_object.object_position = obj_position;
+    map_objects.push_back(new_object);
+}
 
-    // Deletamos o programa de GPU anterior, caso ele exista.
-    if ( program_id != 0 )
-        glDeleteProgram(program_id);
+// Função que determina o tipo de colisão em um dado ponto
+int GetCollisionTypeInPosition(vec4 position) {
+    unsigned int obj_index = 0;
+    bool collision_found = false;
 
-    // Criamos um programa de GPU utilizando os shaders carregados acima.
-    program_id = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
+    while(obj_index < map_objects.size() && !collision_found) {
+        vec3 obj_position = map_objects[obj_index].object_position;
+        vec3 obj_size = map_objects[obj_index].object_size;
+        vec3 obj_start = obj_position - obj_size / 2.0f;
+        vec3 obj_end = obj_position + obj_size / 2.0f;
+        float tol = 0.3f;
 
-    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
-    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
-    // (GPU)! Veja arquivo "shader_vertex.glsl" e "shader_fragment.glsl".
-    model_uniform           = glGetUniformLocation(program_id, "model"); // Variável da matriz "model"
-    view_uniform            = glGetUniformLocation(program_id, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    projection_uniform      = glGetUniformLocation(program_id, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
-    object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
-    bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
-    bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+        bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
+        //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
+        bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
 
-    // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
-    glUseProgram(program_id);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
-    glUseProgram(0);
+        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
+            collision_found = true;
+
+        obj_index++;
+    }
+
+    if (!collision_found)
+        return COLLISION_NONE;
+    else {
+        switch(map_objects[obj_index - 1].object_type) {
+        case CUBE:
+            return COLLISION_SOLID;
+        default:
+            return COLLISION_OTHER;
+        }
+    }
+}
+
+// Função que encontra as coordenadas do spawn do jogador na planta do mapa
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
+    int map_height = plant.size();
+    int map_width = plant[0].size();
+    float center_x = (map_width-1)/2.0f;
+    float center_z = (map_height-1)/2.0f;
+
+    for(int line = 0; line < map_height; line++) {
+        for(int col = 0; col < map_width; col++) {
+            if(plant[line][col] == 'P') {
+                float x = -(center_x - col);
+                float z = -(center_z - line);
+
+                return vec4(x, 0.0f, z, 1.0f);
+            }
+        }
+    }
+
+    // Caso o spawn não seja encontrado, spawna o player no centro por padrão
+    return vec4(0.5f, 0.0f, 0.5f, 1.0f);
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
@@ -822,7 +680,7 @@ void ComputeNormals(ObjModel* model) {
     size_t num_vertices = model->attrib.vertices.size() / 3;
 
     std::vector<int> num_triangles_per_vertex(num_vertices, 0);
-    std::vector<glm::vec4> vertex_normals(num_vertices, glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    std::vector<vec4> vertex_normals(num_vertices, vec4(0.0f,0.0f,0.0f,0.0f));
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -832,21 +690,21 @@ void ComputeNormals(ObjModel* model) {
         {
             assert(model->shapes[shape].mesh.num_face_vertices[triangle] == 3);
 
-            glm::vec4  vertices[3];
+            vec4  vertices[3];
             for (size_t vertex = 0; vertex < 3; ++vertex)
             {
                 tinyobj::index_t idx = model->shapes[shape].mesh.indices[3*triangle + vertex];
                 const float vx = model->attrib.vertices[3*idx.vertex_index + 0];
                 const float vy = model->attrib.vertices[3*idx.vertex_index + 1];
                 const float vz = model->attrib.vertices[3*idx.vertex_index + 2];
-                vertices[vertex] = glm::vec4(vx,vy,vz,1.0);
+                vertices[vertex] = vec4(vx,vy,vz,1.0);
             }
 
-            const glm::vec4  a = vertices[0];
-            const glm::vec4  b = vertices[1];
-            const glm::vec4  c = vertices[2];
+            const vec4  a = vertices[0];
+            const vec4  b = vertices[1];
+            const vec4  c = vertices[2];
 
-            const glm::vec4  n = crossproduct(b-a,c-a);
+            const vec4  n = crossproduct(b-a,c-a);
 
             for (size_t vertex = 0; vertex < 3; ++vertex)
             {
@@ -862,7 +720,7 @@ void ComputeNormals(ObjModel* model) {
 
     for (size_t i = 0; i < vertex_normals.size(); ++i)
     {
-        glm::vec4 n = vertex_normals[i] / (float)num_triangles_per_vertex[i];
+        vec4 n = vertex_normals[i] / (float)num_triangles_per_vertex[i];
         n /= norm(n);
         model->attrib.normals[3*i + 0] = n.x;
         model->attrib.normals[3*i + 1] = n.y;
@@ -889,8 +747,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model) {
         const float minval = std::numeric_limits<float>::min();
         const float maxval = std::numeric_limits<float>::max();
 
-        glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
-        glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
+        vec3 bbox_min = vec3(maxval,maxval,maxval);
+        vec3 bbox_max = vec3(minval,minval,minval);
 
         for (size_t triangle = 0; triangle < num_triangles; ++triangle)
         {
@@ -1003,6 +861,143 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model) {
     glBindVertexArray(0);
 }
 
+// Função que carrega um nível a partir de um arquivo (parser)
+Level LoadLevelFromFile(const char* filepath) {
+    Level loaded_level;
+
+    printf("Carregando nivel \"%s\"... ", filepath);
+
+    std::ifstream level_file;
+    level_file.open(filepath);
+    if (!level_file.is_open()) {
+        throw std::runtime_error("Erro ao abrir arquivo.");
+    }
+    else {
+        try {
+            // Salva largura e altura na estrutura do nível.
+            string width, height;
+            getline(level_file, width);
+            getline(level_file, height);
+            loaded_level.width = atoi(width.c_str());
+            loaded_level.height = atoi(height.c_str());
+
+            if (loaded_level.width < 0 || loaded_level.height < 0) {
+                throw std::runtime_error("arquivo inválido.");
+            }
+
+            // Salva a planta do nível
+            int line=0, col=0;
+            while (line < loaded_level.height) {
+                string file_line;
+                getline(level_file, file_line);
+                std::vector<char> map_line;
+
+                while (col < loaded_level.width) {
+                    map_line.push_back(file_line[col]);
+                    col++;
+                }
+
+                loaded_level.plant.push_back(map_line);
+
+                // Reseta variáveis para a próxima iteração
+                col = 0;
+                map_line.clear();
+
+                line++;
+            }
+
+            printf("OK!\n");
+            level_file.close();
+            return loaded_level;
+        }
+        catch (...) {
+            throw std::runtime_error("arquivo inválido.");
+        }
+    }
+}
+
+// Função que carrega uma imagem para ser utilizada como textura
+void LoadTextureImage(const char* filename) {
+    printf("Carregando imagem \"%s\"... ", filename);
+
+    // Primeiro fazemos a leitura da imagem do disco
+    stbi_set_flip_vertically_on_load(true);
+    int width;
+    int height;
+    int channels;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
+
+    if ( data == NULL )
+    {
+        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        std::exit(EXIT_FAILURE);
+    }
+
+    printf("OK (%dx%d).\n", width, height);
+
+    // Agora criamos objetos na GPU com OpenGL para armazenar a textura
+    GLuint texture_id;
+    GLuint sampler_id;
+    glGenTextures(1, &texture_id);
+    glGenSamplers(1, &sampler_id);
+
+    // Veja slide 160 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf"
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Parâmetros de amostragem da textura. Falaremos sobre eles em uma próxima aula.
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Agora enviamos a imagem lida do disco para a GPU
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+
+    GLuint textureunit = g_NumLoadedTextures;
+    glActiveTexture(GL_TEXTURE0 + textureunit);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindSampler(textureunit, sampler_id);
+
+    stbi_image_free(data);
+
+    g_NumLoadedTextures += 1;
+}
+
+// Função que carrega os shaders de vértices e de fragmentos que serão
+// utilizados para renderização.
+void LoadShadersFromFiles() {
+    vertex_shader_id = LoadShader_Vertex("../../src/shader_vertex.glsl");
+    fragment_shader_id = LoadShader_Fragment("../../src/shader_fragment.glsl");
+
+    // Deletamos o programa de GPU anterior, caso ele exista.
+    if ( program_id != 0 )
+        glDeleteProgram(program_id);
+
+    // Criamos um programa de GPU utilizando os shaders carregados acima.
+    program_id = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
+
+    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
+    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
+    // (GPU)! Veja arquivo "shader_vertex.glsl" e "shader_fragment.glsl".
+    model_uniform           = glGetUniformLocation(program_id, "model"); // Variável da matriz "model"
+    view_uniform            = glGetUniformLocation(program_id, "view"); // Variável da matriz "view" em shader_vertex.glsl
+    projection_uniform      = glGetUniformLocation(program_id, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
+    bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
+    bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+
+    // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
+    glUseProgram(program_id);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUseProgram(0);
+}
+
 // Carrega um Vertex Shader de um arquivo GLSL. Veja definição de LoadShader() abaixo.
 GLuint LoadShader_Vertex(const char* filename) {
     // Criamos um identificador (ID) para este shader, informando que o mesmo
@@ -1045,7 +1040,7 @@ void LoadShader(const char* filename, GLuint shader_id) {
     }
     std::stringstream shader;
     shader << file.rdbuf();
-    std::string str = shader.str();
+    string str = shader.str();
     const GLchar* shader_string = str.c_str();
     const GLint   shader_string_length = static_cast<GLint>( str.length() );
 
@@ -1070,7 +1065,7 @@ void LoadShader(const char* filename, GLuint shader_id) {
     // Imprime no terminal qualquer erro ou "warning" de compilação
     if ( log_length != 0 )
     {
-        std::string  output;
+        string  output;
 
         if ( !compiled_ok )
         {
@@ -1127,7 +1122,7 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
 
         glGetProgramInfoLog(program_id, log_length, &log_length, log);
 
-        std::string output;
+        string output;
 
         output += "ERROR: OpenGL linking of program failed.\n";
         output += "== Start of link log\n";
@@ -1187,7 +1182,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 
         // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
         // Somente rotaciona se não atingiu os limites (cima/baixo)
-        glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
+        vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
         if ((rotated_camera[1] >= -PI/1.35) && (rotated_camera[1] <= PI/1.35))
             camera_view_vector = rotated_camera;
     } else {
@@ -1331,12 +1326,12 @@ void PrintGPUInfoInTerminal() {
 // mesmo por todos os sistemas de coordenadas armazenados nas matrizes model,
 // view, e projection; e escreve na tela as matrizes e pontos resultantes
 // dessas transformações.
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model) {
+void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, vec4 p_model) {
     if ( !g_ShowInfoText )
         return;
 
-    glm::vec4 p_world = model*p_model;
-    glm::vec4 p_camera = view*p_world;
+    vec4 p_world = model*p_model;
+    vec4 p_camera = view*p_world;
 
     float pad = TextRendering_LineHeight(window);
 
@@ -1569,9 +1564,9 @@ void PrintObjModelInfo(ObjModel* model) {
     printf("  material.map_Pm = %s\n", materials[i].metallic_texname.c_str());
     printf("  material.map_Ps = %s\n", materials[i].sheen_texname.c_str());
     printf("  material.norm   = %s\n", materials[i].normal_texname.c_str());
-    std::map<std::string, std::string>::const_iterator it(
+    std::map<string, string>::const_iterator it(
         materials[i].unknown_parameter.begin());
-    std::map<std::string, std::string>::const_iterator itEnd(
+    std::map<string, string>::const_iterator itEnd(
         materials[i].unknown_parameter.end());
 
     for (; it != itEnd; it++) {
