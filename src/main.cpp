@@ -168,7 +168,8 @@ float g_CameraDistance = 2.5f; // Distância da câmera para a origem
 glm::vec4 camera_position_c  = glm::vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-glm::vec4 camera_u_vector = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
+glm::vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
+glm::vec4 camera_lookat_l    = player_position;
 
 // Variável de controle da câmera
 bool g_useFirstPersonCamera = true;
@@ -294,7 +295,7 @@ int main(int argc, char* argv[])
 
         glUseProgram(program_id);
 
-        // Movimentação em primeira pessoa
+        // Movimentação do personagem
         if (key_w_pressed)
             player_position += MOVEMENT_AMOUNT * glm::vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
         if (key_s_pressed)
@@ -303,7 +304,23 @@ int main(int argc, char* argv[])
             player_position -= MOVEMENT_AMOUNT * camera_u_vector;
         if (key_d_pressed)
             player_position += MOVEMENT_AMOUNT * camera_u_vector;
-        camera_position_c = player_position;
+
+        if (g_useFirstPersonCamera) {
+            camera_position_c = player_position;
+        }
+        else {
+            float r = g_CameraDistance;
+            float y = r*sin(g_CameraPhi);
+            float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+            float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+
+            camera_position_c  = glm::vec4(x+player_position[0],y+player_position[1],z+player_position[2],1.0f); // Ponto "c", centro da câmera
+            camera_lookat_l    = player_position; // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+            camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+            camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector);
+        }
+
+        player_direction = glm::vec4(camera_view_vector[0], 1.0f, camera_view_vector[2], 0.0f);
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
@@ -329,6 +346,8 @@ int main(int argc, char* argv[])
         ///////////////////
         // VACA: JOGADOR //
         ///////////////////
+
+        printf("dot %lf acos %lf\n", dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f)), acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))));
 
         DrawPlayer(player_position[0], player_position[1], player_position[2], acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))), 0.4f);
 
@@ -570,9 +589,7 @@ void DrawVirtualObject(const char* object_name)
 }
 
 // Função que carrega os shaders de vértices e de fragmentos que serão
-// utilizados para renderização. Veja slide 217 e 219 do documento
-// "Aula_03_Rendering_Pipeline_Grafico.pdf".
-//
+// utilizados para renderização.
 void LoadShadersFromFiles()
 {
     vertex_shader_id = LoadShader_Vertex("../../src/shader_vertex.glsl");
@@ -1003,17 +1020,32 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     double dx = xpos - g_LastCursorPosX;
     double dy = ypos - g_LastCursorPosY;
 
-    // Agora atualizamos o vetor view e o vetor u conforme a variação do cursor
-    // Girar na horizontal (olhar pros lados) = rotação em torno do eixo UP
-    camera_view_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_view_vector;
-    camera_u_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_u_vector;
-    player_direction = glm::vec4(camera_view_vector[0], 1.0f, camera_view_vector[2], 0.0f);
+    if (g_useFirstPersonCamera) {
+        // Agora atualizamos o vetor view e o vetor u conforme a variação do cursor
+        // Girar na horizontal (olhar pros lados) = rotação em torno do eixo UP
+        camera_view_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_view_vector;
+        camera_u_vector = Matrix_Rotate(ROTATION_SPEED_X * -dx, camera_up_vector) * camera_u_vector;
 
-    // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
-    // Somente rotaciona se não atingiu os limites (cima/baixo)
-    glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
-    if ((rotated_camera[1] >= -PI/2) && (rotated_camera[1] <= PI/2))
-        camera_view_vector = rotated_camera;
+        // Girar na vertical (olhar pra cima) = rotação em torno do eixo U
+        // Somente rotaciona se não atingiu os limites (cima/baixo)
+        glm::vec4 rotated_camera = Matrix_Rotate(ROTATION_SPEED_Y * -dy, camera_u_vector) * camera_view_vector;;
+        if ((rotated_camera[1] >= -PI/2) && (rotated_camera[1] <= PI/2))
+            camera_view_vector = rotated_camera;
+    } else {
+      // Atualizamos parâmetros da câmera com os deslocamentos
+        g_CameraTheta -= 0.01f*dx;
+        g_CameraPhi   += 0.01f*dy;
+
+        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+        float phimax = PI/2;
+        float phimin = -phimax;
+
+        if (g_CameraPhi > phimax)
+            g_CameraPhi = phimax;
+
+        if (g_CameraPhi < phimin)
+            g_CameraPhi = phimin;
+    }
 
     // Atualizamos as variáveis globais para armazenar a posição atual do
     // cursor como sendo a última posição conhecida do cursor.
@@ -1079,6 +1111,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
     }
+
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+        g_useFirstPersonCamera = !(g_useFirstPersonCamera);
 
     // Verifica se as teclas de movimentação foram pressionadas/soltas
     if (key == GLFW_KEY_W && action == GLFW_PRESS)
