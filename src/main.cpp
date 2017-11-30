@@ -160,7 +160,7 @@ glm::vec4 player_position = glm::vec4(9.0f, 0.0f, 2.0f, 1.0f);
 glm::vec4 player_direction = glm::vec4(0.0f, 0.0f, 2.0f, 0.0f);
 
 // CÂMERA LOOKAT
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraTheta = PI; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 2.5f; // Distância da câmera para a origem
 
@@ -172,7 +172,7 @@ glm::vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vecto
 glm::vec4 camera_lookat_l    = player_position;
 
 // Variável de controle da câmera
-bool g_useFirstPersonCamera = true;
+bool g_useFirstPersonCamera = false;
 
 // Variáveis de controle do cursor
 double g_LastCursorPosX, g_LastCursorPosY;
@@ -314,13 +314,13 @@ int main(int argc, char* argv[])
             float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
             float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
-            camera_position_c  = glm::vec4(x+player_position[0],y+player_position[1],z+player_position[2],1.0f); // Ponto "c", centro da câmera
+            camera_position_c  = glm::vec4(x+player_position[0],y,z+player_position[2],1.0f); // Ponto "c", centro da câmera
             camera_lookat_l    = player_position; // Ponto "l", para onde a câmera (look-at) estará sempre olhando
             camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
             camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector);
         }
 
-        player_direction = glm::vec4(camera_view_vector[0], 1.0f, camera_view_vector[2], 0.0f);
+        player_direction = glm::vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
@@ -347,9 +347,10 @@ int main(int argc, char* argv[])
         // VACA: JOGADOR //
         ///////////////////
 
-        printf("dot %lf acos %lf\n", dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f)), acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))));
-
-        DrawPlayer(player_position[0], player_position[1], player_position[2], acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))), 0.4f);
+        float vecangle = acos(dotproduct(player_direction, glm::vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
+        if (player_direction[2] > 0.0f)
+            vecangle = -vecangle;
+        DrawPlayer(player_position[0], player_position[1], player_position[2], vecangle - PI/2, 0.4f);
 
         ///////////
         // PLANO //
