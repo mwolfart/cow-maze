@@ -376,7 +376,7 @@ int main(int argc, char* argv[])
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
-        glm::mat4 model = Matrix_Identity();
+//        glm::mat4 model = Matrix_Identity();
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -20.0f; // Posição do "far plane"
 
@@ -388,13 +388,7 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        ///////////
-        // PLANO //
-        ///////////
 
-        model = Matrix_Translate(0.0f,-1.0f,0.0f)
-                * Matrix_Scale(level_one.width/2.0f, 1.0f, level_one.height/2.0f);
-        DrawVirtualObject("plane", PLANE, model);
 
         /////////////
         // JOGADOR //
@@ -473,14 +467,23 @@ void DrawTileInCoordinate(char tile_type, float x, float z) {
     case 'W':{
         glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
         AddObjectToMap(WATER, vec3(x, floor_shift, z), tile_size);
-        DrawVirtualObject("water", WATER, model);
+        DrawVirtualObject("plane", WATER, model);
         break;
     }
 
     // Player spawn
     case 'P':
     // Piso (vazio)
-    case 'F':
+    case 'F':{
+       // model = Matrix_Identity();
+
+        glm::mat4 model = Matrix_Translate(x,-1.0f,z) * Matrix_Scale(1/2.0f, 1.0f, 1/2.0f);
+
+        DrawVirtualObject("plane", PLANE, model);
+        break;
+    }
+
+
     default:
         break;
     }
@@ -1025,6 +1028,8 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
+
     glUseProgram(0);
 }
 

@@ -113,23 +113,27 @@ void main()
     }
     else if ( object_id == PLANE )
     {
-        int number_of_repetitions = 32;
+       /* int number_of_repetitions = 32;
         float period = 1.0f/number_of_repetitions;
         U = mod(texcoords.x, period)*number_of_repetitions;
         V = mod(texcoords.y, period)*number_of_repetitions;
 
         vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
         color = Kd0 * (lambert + 0.01);
+        */
+        U = texcoords.x;
+        V = texcoords.y;
+
+        vec3 Kd1 = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd1;
     }
     else if ( object_id == WATER )
     {
-        int number_of_repetitions = 32;
-        float period = 1.0f/number_of_repetitions;
-        U = mod(texcoords.x, period)*number_of_repetitions;
-        V = mod(texcoords.y, period)*number_of_repetitions;
+        U = texcoords.x;
+        V = texcoords.y;
 
-        vec3 Kd0 = texture(TextureImage3, vec2(U,V)).rgb;
-        color = Kd0 * (lambert + 0.01);
+        vec3 Kd1 = texture(TextureImage3, vec2(U,V)).rgb;
+        color = Kd1;
     }
     else if ( object_id == CUBE )
     {
