@@ -47,6 +47,7 @@
 #define SPHERE 3
 #define CUBE   4
 #define PLAYER 5
+#define WATER 6
 
 // Tipos de colisõee
 #define COLLISION_NONE  0
@@ -273,10 +274,12 @@ int main(int argc, char* argv[])
     PrintGPUInfoInTerminal();
     LoadShadersFromFiles();
 
-    // Carregamos duas imagens para serem utilizadas como textura
+    // Carregamos imagens para serem utilizadas como textura
     LoadTextureImage("../../data/textures/ground.png"); // TextureImage0
     LoadTextureImage("../../data/textures/wall.png");   // TextureImage1
     LoadTextureImage("../../data/textures/cow.png");    // TextureImage2
+    LoadTextureImage("../../data/textures/water.png");    // TextureImage3
+
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -451,6 +454,10 @@ void DrawTileInCoordinate(char tile_type, float x, float z) {
     vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
     float cube_vertical_shift = -0.5f;
 
+    //water
+    vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
+    float floor_shift = -1.0f;
+
     // PLACEMENT DOS TILES
     /* Adicione novos tiles abaixo */
     switch(tile_type) {
@@ -461,6 +468,15 @@ void DrawTileInCoordinate(char tile_type, float x, float z) {
         DrawVirtualObject("cube", CUBE, model);
         break;
     }
+
+    //Water
+    case 'W':{
+        glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
+        AddObjectToMap(WATER, vec3(x, floor_shift, z), tile_size);
+        DrawVirtualObject("water", WATER, model);
+        break;
+    }
+
     // Player spawn
     case 'P':
     // Piso (vazio)
