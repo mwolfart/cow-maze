@@ -25,6 +25,8 @@ uniform mat4 projection;
 #define SPHERE 3
 #define CUBE   4
 #define WATER 6
+#define WATER2 7
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -36,6 +38,8 @@ uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
+
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -135,6 +139,15 @@ void main()
         vec3 Kd1 = texture(TextureImage3, vec2(U,V)).rgb;
         color = Kd1;
     }
+    else if ( object_id == WATER2 )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        vec3 Kd1 = texture(TextureImage4, vec2(U,V)).rgb;
+        color = Kd1;
+    }
+
     else if ( object_id == CUBE )
     {
         U = texcoords.x;

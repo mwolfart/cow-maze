@@ -48,6 +48,7 @@
 #define CUBE   4
 #define PLAYER 5
 #define WATER 6
+#define WATER2 7
 
 // Tipos de colisõee
 #define COLLISION_NONE  0
@@ -138,9 +139,9 @@ void AddObjectToMap(int obj_id, vec3 obj_position, vec3 obj_size);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
-void DrawMap(std::vector<std::vector<char>> plant);
+void DrawMap(std::vector<std::vector<char>> plant, double seconds, double old_seconds);
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
-void DrawTileInCoordinate(char tile_type, float x, float z);
+void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, double old_seconds);
 void PrintGPUInfoInTerminal();
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
@@ -279,6 +280,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/wall.png");   // TextureImage1
     LoadTextureImage("../../data/textures/cow.png");    // TextureImage2
     LoadTextureImage("../../data/textures/water.png");    // TextureImage3
+    LoadTextureImage("../../data/textures/water2.jpg");    // TextureImage4
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -324,9 +326,16 @@ int main(int argc, char* argv[])
     player_position = GetPlayerSpawnCoordinates(level_one.plant);
     camera_lookat_l = player_position;
 
+    // Utilizamos o tempo para alternar a textura de objetos animados
+    double seconds = (double) glfwGetTime();
+    double old_seconds = seconds;
+
+
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+        old_seconds = seconds;
+
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -403,7 +412,8 @@ int main(int argc, char* argv[])
         // RESTO DO MAPA //
         ///////////////////
 
-        DrawMap(level_one.plant);
+        seconds = (double) glfwGetTime();
+        DrawMap(level_one.plant, seconds, old_seconds);
 
         glfwSwapBuffers(window);
         // Verificação de eventos
@@ -418,7 +428,7 @@ int main(int argc, char* argv[])
 }
 
 // Função que desenha o mapa na cena com base na sua planta
-void DrawMap(std::vector<std::vector<char>> plant) {
+void DrawMap(std::vector<std::vector<char>> plant, double seconds, double old_seconds) {
     int map_height = plant.size();
     int map_width = plant[0].size();
     float center_x = (map_width-1)/2.0f;
@@ -430,7 +440,7 @@ void DrawMap(std::vector<std::vector<char>> plant) {
             float x = -(center_x - col);
             float z = -(center_z - line);
 
-            DrawTileInCoordinate(current_tile, x, z);
+            DrawTileInCoordinate(current_tile, x, z, seconds, old_seconds);
 
 
         }
@@ -441,7 +451,7 @@ void DrawMap(std::vector<std::vector<char>> plant) {
 // Desenha um bloco em dada posição
 // CASO SE QUEIRA DEFINIR UM NOVO TIPO DE BLOCO, DEVE-SE
 //  ADICIONAR MAIS UMA CLÁUSULA PARA O SWITCH
-void DrawTileInCoordinate(char tile_type, float x, float z) {
+void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, double old_seconds) {
     // PARÂMETROS DE TAMANHO E POSICIONAMENTO DOS TILES
 
     // Cubo
@@ -466,8 +476,21 @@ void DrawTileInCoordinate(char tile_type, float x, float z) {
     //Water
     case 'W':{
         glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
+
+        double fracionario, inteira;
+        fracionario = modf(seconds, &inteira);
+
         AddObjectToMap(WATER, vec3(x, floor_shift, z), tile_size);
-        DrawVirtualObject("plane", WATER, model);
+
+        if (old_seconds != seconds){
+            if (fracionario > 0 && fracionario < 0.5 )
+                DrawVirtualObject("plane", WATER, model);
+            else
+                DrawVirtualObject("plane", WATER2, model);
+
+        }
+
+
         break;
     }
 
@@ -1029,6 +1052,7 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), 4);
 
     glUseProgram(0);
 }
