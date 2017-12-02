@@ -47,15 +47,18 @@
 #define SPHERE 3
 #define CUBE   4
 #define PLAYER 5
-#define WATER 6
-#define WATER2 7
+#define WATER  6
+#define DIRT   7
+#define DIRTBLOCK 8
 
-// Tipos de colisõee
+// Tipos de colisões
 #define COLLISION_NONE  0
 #define COLLISION_SOLID 1
 #define COLLISION_WATER 2
 #define COLLISION_LAVA  3
 #define COLLISION_LOCK  4
+#define COLLISION_DIRT  5
+#define COLLISION_DIRTBLOCK 6
 #define COLLISION_OTHER -1
 
 typedef glm::vec3 vec3;
@@ -235,6 +238,7 @@ GLint projection_uniform;
 GLint object_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
+GLint anim_timer_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -276,12 +280,32 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamos imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/textures/ground.png"); // TextureImage0
-    LoadTextureImage("../../data/textures/wall.png");   // TextureImage1
-    LoadTextureImage("../../data/textures/cow.png");    // TextureImage2
-    LoadTextureImage("../../data/textures/water.png");    // TextureImage3
-    LoadTextureImage("../../data/textures/water2.jpg");    // TextureImage4
+    LoadTextureImage("../../data/textures/ground.png"); 			// TextureImage0
+    LoadTextureImage("../../data/textures/wall.png");   			// TextureImage1
+    LoadTextureImage("../../data/textures/wall.png");    			// TextureImage2
+    LoadTextureImage("../../data/textures/animated/water1.png");    // TextureImage3
+    LoadTextureImage("../../data/textures/animated/water2.png");    // TextureImage4
+    LoadTextureImage("../../data/textures/animated/water3.png");    // TextureImage5
+    LoadTextureImage("../../data/textures/animated/water4.png");    // TextureImage6
+    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage7
+    LoadTextureImage("../../data/textures/animated/water6.png");    // TextureImage8
+    LoadTextureImage("../../data/textures/animated/water7.png");    // TextureImage9
+    LoadTextureImage("../../data/textures/animated/water8.png");    // TextureImage10
+    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage11
+    LoadTextureImage("../../data/textures/animated/water10.png");    // TextureImage12
+    LoadTextureImage("../../data/textures/animated/water11.png");    // TextureImage13
+    LoadTextureImage("../../data/textures/animated/water12.png");    // TextureImage14
+    LoadTextureImage("../../data/textures/animated/water13.png");    // TextureImage15
+    LoadTextureImage("../../data/textures/animated/water14.png");    // TextureImage16
+    LoadTextureImage("../../data/textures/animated/water15.png");    // TextureImage17
+    LoadTextureImage("../../data/textures/animated/water16.png");    // TextureImage18
+    LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage19
+    LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage20
 
+    // Variável de controle de animação
+    int curr_anim_tile = 0;
+    int anim_timer = 0;
+    #define ANIMATION_SPEED 10
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -385,7 +409,7 @@ int main(int argc, char* argv[])
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
-//        glm::mat4 model = Matrix_Identity();
+		//glm::mat4 model = Matrix_Identity();
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -20.0f; // Posição do "far plane"
 
@@ -414,6 +438,18 @@ int main(int argc, char* argv[])
 
         seconds = (double) glfwGetTime();
         DrawMap(level_one.plant, seconds, old_seconds);
+
+        // Animação dos tiles (todos são animados em simetria)
+        // CASO DESEJA-SE ANIMÁ-LOS DE FORMA INDEPENDENTE, deve-se
+        // copiar este trecho para cada switch na função de renderização.
+        anim_timer++;
+        if (anim_timer >= ANIMATION_SPEED) {
+        	anim_timer = 0;
+        	curr_anim_tile++;
+        	if (curr_anim_tile == 16)
+        		curr_anim_tile = 0;
+        }
+		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
         glfwSwapBuffers(window);
         // Verificação de eventos
@@ -476,21 +512,24 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     //Water
     case 'W':{
         glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
-
-        double fracionario, inteira;
-        fracionario = modf(seconds, &inteira);
-
         AddObjectToMap(WATER, vec3(x, floor_shift, z), tile_size);
+        DrawVirtualObject("plane", WATER, model);
+        break;
+    }
 
-        if (old_seconds != seconds){
-            if (fracionario > 0 && fracionario < 0.5 )
-                DrawVirtualObject("plane", WATER, model);
-            else
-                DrawVirtualObject("plane", WATER2, model);
+    //Dirt
+    case 'd':{
+    	glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
+        AddObjectToMap(DIRT, vec3(x, floor_shift, z), tile_size);
+        DrawVirtualObject("plane", DIRT, model);
+        break;
+    }
 
-        }
-
-
+    //Dirt block
+    case 'D':{
+    	glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
+        AddObjectToMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size);
+        DrawVirtualObject("cube", DIRTBLOCK, model);
         break;
     }
 
@@ -498,10 +537,7 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     case 'P':
     // Piso (vazio)
     case 'F':{
-       // model = Matrix_Identity();
-
         glm::mat4 model = Matrix_Translate(x,-1.0f,z) * Matrix_Scale(1/2.0f, 1.0f, 1/2.0f);
-
         DrawVirtualObject("plane", PLANE, model);
         break;
     }
@@ -1045,6 +1081,7 @@ void LoadShadersFromFiles() {
     object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
     bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
     bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+    anim_timer_uniform      = glGetUniformLocation(program_id, "anim_timer");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(program_id);
@@ -1053,6 +1090,22 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), 5);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage10"), 10);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage11"), 11);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage12"), 12);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage13"), 13);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage14"), 14);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage15"), 15);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage16"), 16);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage17"), 17);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage18"), 18);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage19"), 19);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage20"), 20);
 
     glUseProgram(0);
 }

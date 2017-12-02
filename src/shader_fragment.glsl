@@ -24,8 +24,9 @@ uniform mat4 projection;
 #define BUNNY  2
 #define SPHERE 3
 #define CUBE   4
-#define WATER 6
-#define WATER2 7
+#define WATER  6
+#define DIRT   7
+#define DIRTBLOCK 8
 
 uniform int object_id;
 
@@ -39,7 +40,25 @@ uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
+uniform sampler2D TextureImage6;
+uniform sampler2D TextureImage7;
+uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
+uniform sampler2D TextureImage11;
+uniform sampler2D TextureImage12;
+uniform sampler2D TextureImage13;
+uniform sampler2D TextureImage14;
+uniform sampler2D TextureImage15;
+uniform sampler2D TextureImage16;
+uniform sampler2D TextureImage17;
+uniform sampler2D TextureImage18;
+uniform sampler2D TextureImage19;
+uniform sampler2D TextureImage20;
 
+// Variável de controle da animação
+uniform int anim_timer;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -95,8 +114,8 @@ void main()
         U = (theta + M_PI) / (2 * M_PI);
         V = (phi + M_PI/2) / M_PI;
 
-        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-        color = Kd0 * (lambert + 0.01);
+        vec3 Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd * (lambert + 0.01);
     }
     else if ( object_id == BUNNY || object_id == COW )
     {
@@ -112,8 +131,8 @@ void main()
         U = (position_model[0] - minx)/(maxx - minx);
         V = (position_model[1] - miny)/(maxy - miny);
 
-        vec3 Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
-        color = Kd0;
+        vec3 Kd = texture(TextureImage2, vec2(U,V)).rgb;
+        color = Kd;
     }
     else if ( object_id == PLANE )
     {
@@ -122,39 +141,65 @@ void main()
         U = mod(texcoords.x, period)*number_of_repetitions;
         V = mod(texcoords.y, period)*number_of_repetitions;
 
-        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-        color = Kd0 * (lambert + 0.01);
+        vec3 Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd * (lambert + 0.01);
         */
         U = texcoords.x;
         V = texcoords.y;
 
-        vec3 Kd1 = texture(TextureImage0, vec2(U,V)).rgb;
-        color = Kd1;
+        vec3 Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        color = Kd;
     }
     else if ( object_id == WATER )
     {
         U = texcoords.x;
         V = texcoords.y;
+        vec3 Kd;
 
-        vec3 Kd1 = texture(TextureImage3, vec2(U,V)).rgb;
-        color = Kd1;
+        switch (anim_timer) {
+        case 0: { Kd = texture(TextureImage3, vec2(U,V)).rgb; break; }
+        case 1: { Kd = texture(TextureImage4, vec2(U,V)).rgb; break; }
+        case 2: { Kd = texture(TextureImage5, vec2(U,V)).rgb; break; }
+        case 3: { Kd = texture(TextureImage6, vec2(U,V)).rgb; break; }
+        case 4: { Kd = texture(TextureImage7, vec2(U,V)).rgb; break; }
+        case 5: { Kd = texture(TextureImage8, vec2(U,V)).rgb; break; }
+        case 6: { Kd = texture(TextureImage9, vec2(U,V)).rgb; break; }
+        case 7: { Kd = texture(TextureImage10, vec2(U,V)).rgb; break; }
+        case 8: { Kd = texture(TextureImage11, vec2(U,V)).rgb; break; }
+        case 9: { Kd = texture(TextureImage12, vec2(U,V)).rgb; break; }
+        case 10: { Kd = texture(TextureImage13, vec2(U,V)).rgb; break; }
+        case 11: { Kd = texture(TextureImage14, vec2(U,V)).rgb; break; }
+        case 12: { Kd = texture(TextureImage15, vec2(U,V)).rgb; break; }
+        case 13: { Kd = texture(TextureImage16, vec2(U,V)).rgb; break; }
+        case 14: { Kd = texture(TextureImage17, vec2(U,V)).rgb; break; }
+        case 15: { Kd = texture(TextureImage18, vec2(U,V)).rgb; break; }
+        }
+
+        color = Kd;
     }
-    else if ( object_id == WATER2 )
-    {
-        U = texcoords.x;
-        V = texcoords.y;
-
-        vec3 Kd1 = texture(TextureImage4, vec2(U,V)).rgb;
-        color = Kd1;
-    }
-
     else if ( object_id == CUBE )
     {
         U = texcoords.x;
         V = texcoords.y;
 
-        vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-        color = Kd1;
+        vec3 Kd = texture(TextureImage1, vec2(U,V)).rgb;
+        color = Kd;
+    }
+    else if ( object_id == DIRT )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        vec3 Kd = texture(TextureImage19, vec2(U,V)).rgb;
+        color = Kd;
+    }
+    else if ( object_id == DIRTBLOCK )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        vec3 Kd = texture(TextureImage20, vec2(U,V)).rgb;
+        color = Kd;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.
