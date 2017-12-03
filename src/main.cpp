@@ -451,6 +451,12 @@ int main(int argc, char* argv[])
         }
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
+        if (g_ShowInfoText) {
+            TextRendering_ShowEulerAngles(window);
+            TextRendering_ShowProjection(window);
+            TextRendering_ShowFramesPerSecond(window);
+        }
+
         glfwSwapBuffers(window);
         // Verificação de eventos
         glfwPollEvents();
