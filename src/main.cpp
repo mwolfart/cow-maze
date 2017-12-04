@@ -125,6 +125,7 @@ void DrawMapObjects();
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name);
+int getSmallestValueInVector(std::vector<int> vecN);
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 void PrintGPUInfoInTerminal();
@@ -371,26 +372,52 @@ int main(int argc, char* argv[])
 
         // Movimentação do personagem
         vec4 target_position;
+        vec4 target_position2;
+        vec4 target_position3;
 
         if (key_w_pressed) {
             target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            target_position2 = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
+            target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            	player_position = target_position2;
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            	player_position = target_position3;
         }
         if (key_s_pressed) {
             target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+            target_position2 = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
+            target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            	player_position = target_position2;
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            	player_position = target_position3;
         }
         if (key_a_pressed) {
             target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
+            target_position2 = player_position - MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
+            target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            	player_position = target_position2;
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            	player_position = target_position3;
         }
         if (key_d_pressed) {
             target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
+            target_position2 = player_position + MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
+            target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
             if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
                 player_position = target_position;
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            	player_position = target_position2;
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            	player_position = target_position3;
         }
 
         // Controle do tipo de câmera
@@ -548,7 +575,7 @@ void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const cha
 
 // Função que desenha os objetos na cena (com base no vetor de objetos)
 void DrawMapObjects() {
-    for(int i = 0; i < map_objects.size(); i++) {
+    for(unsigned int i = 0; i < map_objects.size(); i++) {
         MapObject current_object = map_objects[i];
         glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z);
         DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
@@ -686,8 +713,9 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 int GetCollisionTypeInPosition(vec4 position) {
     unsigned int obj_index = 0;
     bool collision_found = false;
+    std::vector<int> collision_types;
 
-    while(obj_index < map_objects.size() && !collision_found) {
+    while(obj_index < map_objects.size()) {
         vec3 obj_position = map_objects[obj_index].object_position;
         vec3 obj_size = map_objects[obj_index].object_size;
         vec3 obj_start = obj_position - obj_size / 2.0f;
@@ -698,22 +726,48 @@ int GetCollisionTypeInPosition(vec4 position) {
         //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
         bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
 
-        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
-            collision_found = true;
+        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval) {
+            switch(map_objects[obj_index].object_type) {
+	        case CUBE: {
+	            collision_types.push_back(COLLISION_SOLID);
+	            break;
+	        }
+	        case WATER: {
+	        	collision_types.push_back(COLLISION_WATER);
+	            break;
+	        }
+	        case DIRT: {
+	        	collision_types.push_back(COLLISION_DIRT);
+	            break;
+	        }
+	        case DIRTBLOCK: {
+	        	collision_types.push_back(COLLISION_DIRTBLOCK);
+	            break;
+	        }
+	        default:
+	        	break;
+	        }
+        }
 
         obj_index++;
     }
 
-    if (!collision_found)
-        return COLLISION_NONE;
-    else {
-        switch(map_objects[obj_index - 1].object_type) {
-        case CUBE:
-            return COLLISION_SOLID;
-        default:
-            return COLLISION_NONE;
-        }
-    }
+    if (collision_types.size() == 0)
+    	return COLLISION_NONE;
+    else
+    	return getSmallestValueInVector(collision_types);
+}
+
+// Função que pega o menor valor em um vetor
+int getSmallestValueInVector(std::vector<int> vecN) {
+	int minimum = 900;
+
+	for (unsigned int i = 0; i < vecN.size(); i++) {
+		if (vecN[i] < minimum)
+			minimum = vecN[i];
+	}
+
+	return minimum;
 }
 
 // Função que encontra as coordenadas do spawn do jogador na planta do mapa
