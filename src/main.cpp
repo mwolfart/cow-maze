@@ -122,6 +122,9 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
 void DrawMapObjects();
+void CalculatePlayerPosition();
+void UpdatePlayerPosition(vec4 target_pos, vec4 target_pos_xonly, vec4 target_pos_zonly);
+int GetObjectIndexInCoordinate(int x, int z);
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name);
@@ -371,54 +374,7 @@ int main(int argc, char* argv[])
         glUseProgram(program_id);
 
         // Movimentação do personagem
-        vec4 target_position;
-        vec4 target_position2;
-        vec4 target_position3;
-
-        if (key_w_pressed) {
-            target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-            target_position2 = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
-            target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
-                player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
-            	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
-            	player_position = target_position3;
-        }
-        if (key_s_pressed) {
-            target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-            target_position2 = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
-            target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
-                player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
-            	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
-            	player_position = target_position3;
-        }
-        if (key_a_pressed) {
-            target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
-            target_position2 = player_position - MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
-            target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
-                player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
-            	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
-            	player_position = target_position3;
-        }
-        if (key_d_pressed) {
-            target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
-            target_position2 = player_position + MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
-            target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
-                player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
-            	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
-            	player_position = target_position3;
-        }
+        CalculatePlayerPosition();
 
         // Controle do tipo de câmera
         if (g_useFirstPersonCamera) {
@@ -733,7 +689,7 @@ int GetCollisionTypeInPosition(vec4 position) {
     	}
     	case DIRT:
     	case WATER:
-    	case PLANE: 
+    	case PLANE:
     	default: {
     		tol = floor_tol;
     		break;
@@ -790,6 +746,77 @@ int getSmallestValueInVector(std::vector<int> vecN) {
 	}
 
 	return minimum;
+}
+
+void CalculatePlayerPosition() {
+    vec4 target_position, target_position_xonly, target_position_zonly;
+
+    if (key_w_pressed) {
+        target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+        target_position_xonly = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
+        target_position_zonly = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
+        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    }
+    if (key_s_pressed) {
+        target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
+        target_position_xonly = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
+        target_position_zonly = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
+        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    }
+    if (key_a_pressed) {
+        target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
+        target_position_xonly = player_position - MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
+        target_position_zonly = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
+        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    }
+    if (key_d_pressed) {
+        target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
+        target_position_xonly = player_position + MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
+        target_position_zonly = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
+        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    }
+}
+
+void UpdatePlayerPosition(vec4 target_pos, vec4 target_pos_xonly, vec4 target_pos_zonly) {
+    int collision_type = GetCollisionTypeInPosition(target_pos);
+    int collision_type_x = GetCollisionTypeInPosition(target_pos_xonly);
+    int collision_type_z = GetCollisionTypeInPosition(target_pos_zonly);
+
+    if (collision_type == COLLISION_SOLID) {
+        if (!(collision_type_x == COLLISION_SOLID)) {
+            collision_type = collision_type_x;
+            target_pos = target_pos_xonly;
+        }
+        else if (!(collision_type_x == COLLISION_SOLID)) {
+            collision_type = collision_type_z;
+            target_pos = target_pos_zonly;
+        }
+    }
+
+    switch(collision_type) {
+    case COLLISION_WATER: {
+        player_position = target_pos;
+        // death animation
+    }
+    case COLLISION_DIRT: {
+        player_position = target_pos;
+        int x = round(player_position.x);
+        int z = round(player_position.z);
+        int target_object = GetObjectIndexInCoordinate(x, z);
+        map_objects[target_object].object_type = PLANE;
+    }
+    default:
+        break;
+    }
+
+}
+
+int GetObjectIndexInCoordinate(int x, int z) {
+    for(unsigned int i = 0; i < map_objects.size(); i++) {
+        if ((map_objects[i].object_position.x == x) && (map_objects[i].object_position.z == z))
+            return i;
+    }
+    return -1;
 }
 
 // Função que encontra as coordenadas do spawn do jogador na planta do mapa
