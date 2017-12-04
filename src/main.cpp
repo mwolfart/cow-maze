@@ -185,10 +185,10 @@ std::vector<MapObject> map_objects;
 
 #define PLAYER_HEAD 	60
 #define PLAYER_TORSO 	61
-#define PLAYER_ARMS 	62
-#define PLAYER_HANDS 	63
-#define PLAYER_LEGS 	64
-#define PLAYER_FEET 	65
+#define PLAYER_ARM 		62
+#define PLAYER_HAND 	63
+#define PLAYER_LEG 		64
+#define PLAYER_FOOT 	65
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
@@ -301,23 +301,11 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/wall.png");   			// TextureImage1
     LoadTextureImage("../../data/textures/wall.png");    			// TextureImage2
     LoadTextureImage("../../data/textures/animated/water1.png");    // TextureImage3
-    LoadTextureImage("../../data/textures/animated/water2.png");    // TextureImage4
-    LoadTextureImage("../../data/textures/animated/water3.png");    // TextureImage5
-    LoadTextureImage("../../data/textures/animated/water4.png");    // TextureImage6
-    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage7
-    LoadTextureImage("../../data/textures/animated/water6.png");    // TextureImage8
-    LoadTextureImage("../../data/textures/animated/water7.png");    // TextureImage9
-    LoadTextureImage("../../data/textures/animated/water8.png");    // TextureImage10
-    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage11
-    LoadTextureImage("../../data/textures/animated/water10.png");    // TextureImage12
-    LoadTextureImage("../../data/textures/animated/water11.png");    // TextureImage13
-    LoadTextureImage("../../data/textures/animated/water12.png");    // TextureImage14
-    LoadTextureImage("../../data/textures/animated/water13.png");    // TextureImage15
-    LoadTextureImage("../../data/textures/animated/water14.png");    // TextureImage16
-    LoadTextureImage("../../data/textures/animated/water15.png");    // TextureImage17
-    LoadTextureImage("../../data/textures/animated/water16.png");    // TextureImage18
-    LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage19
-    LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage20
+    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage4
+    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage5
+    LoadTextureImage("../../data/textures/animated/water13.png");    // TextureImage6
+    LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage7
+    LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage8
 
     // Variável de controle de animação
     int curr_anim_tile = 0;
@@ -448,7 +436,7 @@ int main(int argc, char* argv[])
         if (anim_timer >= ANIMATION_SPEED) {
         	anim_timer = 0;
         	curr_anim_tile++;
-        	if (curr_anim_tile == 16)
+        	if (curr_anim_tile == 4)
         		curr_anim_tile = 0;
         }
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
@@ -571,18 +559,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(-0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação do braço direito
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço direito
-            DrawVirtualObject("cube", PLAYER_ARMS, model);
+            DrawVirtualObject("cube", PLAYER_ARM, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço direito
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço direito
-                DrawVirtualObject("cube", PLAYER_ARMS, model);
+                DrawVirtualObject("cube", PLAYER_ARM, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão direita
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                DrawVirtualObject("cube", PLAYER_HANDS, model);
+                DrawVirtualObject("cube", PLAYER_HAND, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -590,18 +578,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação para o braço esquerdo
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço esquerdo
-            DrawVirtualObject("cube", PLAYER_ARMS, model);
+            DrawVirtualObject("cube", PLAYER_ARM, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço esquerdo
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço esquerdo
-                DrawVirtualObject("cube", PLAYER_ARMS, model);
+                DrawVirtualObject("cube", PLAYER_ARM, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão esquerda
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                DrawVirtualObject("cube", PLAYER_HANDS, model);
+                DrawVirtualObject("cube", PLAYER_HAND, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -609,18 +597,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(-0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna direita
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa direita
-            DrawVirtualObject("cube", PLAYER_LEGS, model);
+            DrawVirtualObject("cube", PLAYER_LEG, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela direita
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela direita
-                DrawVirtualObject("cube", PLAYER_LEGS, model);
+                DrawVirtualObject("cube", PLAYER_LEG, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé direito
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé direito
-                DrawVirtualObject("cube", PLAYER_FEET, model);
+                DrawVirtualObject("cube", PLAYER_FOOT, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -628,18 +616,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna esquerda
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa esquerda
-            DrawVirtualObject("cube", PLAYER_LEGS, model);
+            DrawVirtualObject("cube", PLAYER_LEG, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela esquerda
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela esquerda
-                DrawVirtualObject("cube", PLAYER_LEGS, model);
+                DrawVirtualObject("cube", PLAYER_LEG, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé esquerdo
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé esquerdo
-                DrawVirtualObject("cube", PLAYER_FEET, model);
+                DrawVirtualObject("cube", PLAYER_FOOT, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -1232,18 +1220,6 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage10"), 10);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage11"), 11);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage12"), 12);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage13"), 13);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage14"), 14);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage15"), 15);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage16"), 16);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage17"), 17);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage18"), 18);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage19"), 19);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage20"), 20);
 
     glUseProgram(0);
 }

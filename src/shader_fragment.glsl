@@ -30,10 +30,10 @@ uniform mat4 projection;
 
 #define PLAYER_HEAD     60
 #define PLAYER_TORSO    61
-#define PLAYER_ARMS     62
-#define PLAYER_HANDS    63
-#define PLAYER_LEGS     64
-#define PLAYER_FEET     65
+#define PLAYER_ARM      62
+#define PLAYER_HAND     63
+#define PLAYER_LEG      64
+#define PLAYER_FOOT     65
 
 uniform int object_id;
 
@@ -51,18 +51,6 @@ uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
-uniform sampler2D TextureImage9;
-uniform sampler2D TextureImage10;
-uniform sampler2D TextureImage11;
-uniform sampler2D TextureImage12;
-uniform sampler2D TextureImage13;
-uniform sampler2D TextureImage14;
-uniform sampler2D TextureImage15;
-uniform sampler2D TextureImage16;
-uniform sampler2D TextureImage17;
-uniform sampler2D TextureImage18;
-uniform sampler2D TextureImage19;
-uniform sampler2D TextureImage20;
 
 // Variável de controle da animação
 uniform int anim_timer;
@@ -149,18 +137,6 @@ void main()
         case 1: { Kd = texture(TextureImage4, vec2(U,V)).rgb; break; }
         case 2: { Kd = texture(TextureImage5, vec2(U,V)).rgb; break; }
         case 3: { Kd = texture(TextureImage6, vec2(U,V)).rgb; break; }
-        case 4: { Kd = texture(TextureImage7, vec2(U,V)).rgb; break; }
-        case 5: { Kd = texture(TextureImage8, vec2(U,V)).rgb; break; }
-        case 6: { Kd = texture(TextureImage9, vec2(U,V)).rgb; break; }
-        case 7: { Kd = texture(TextureImage10, vec2(U,V)).rgb; break; }
-        case 8: { Kd = texture(TextureImage11, vec2(U,V)).rgb; break; }
-        case 9: { Kd = texture(TextureImage12, vec2(U,V)).rgb; break; }
-        case 10: { Kd = texture(TextureImage13, vec2(U,V)).rgb; break; }
-        case 11: { Kd = texture(TextureImage14, vec2(U,V)).rgb; break; }
-        case 12: { Kd = texture(TextureImage15, vec2(U,V)).rgb; break; }
-        case 13: { Kd = texture(TextureImage16, vec2(U,V)).rgb; break; }
-        case 14: { Kd = texture(TextureImage17, vec2(U,V)).rgb; break; }
-        case 15: { Kd = texture(TextureImage18, vec2(U,V)).rgb; break; }
         }
 
         color = Kd;
@@ -178,7 +154,7 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
 
-        vec3 Kd = texture(TextureImage19, vec2(U,V)).rgb;
+        vec3 Kd = texture(TextureImage7, vec2(U,V)).rgb;
         color = Kd;
     }
     else if ( object_id == DIRTBLOCK )
@@ -186,16 +162,16 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
 
-        vec3 Kd = texture(TextureImage20, vec2(U,V)).rgb;
+        vec3 Kd = texture(TextureImage8, vec2(U,V)).rgb;
         color = Kd;
     }
-    else if ( object_id == PLAYER_HEAD || object_id == PLAYER_FEET || object_id == PLAYER_HANDS) {
+    else if ( object_id == PLAYER_HEAD || object_id == PLAYER_FOOT || object_id == PLAYER_HAND) {
         color = vec3(0.85f, 0.8f, 0.5f);
     }
-    else if ( object_id == PLAYER_ARMS || object_id == PLAYER_TORSO ) {
+    else if ( object_id == PLAYER_ARM || object_id == PLAYER_TORSO ) {
         color = vec3(0.05f, 0.4f, 0.1f);
     }
-    else if ( object_id == PLAYER_LEGS ) {
+    else if ( object_id == PLAYER_LEG ) {
         color = vec3(0.4f, 0.3f, 0.1f);
     }
 
