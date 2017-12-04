@@ -181,14 +181,14 @@ std::vector<MapObject> map_objects;
 #define DIRTBLOCK 8
 
 // Tipos de colisões
-#define COLLISION_NONE  0
-#define COLLISION_SOLID 1
-#define COLLISION_WATER 2
-#define COLLISION_LAVA  3
-#define COLLISION_LOCK  4
-#define COLLISION_DIRT  5
-#define COLLISION_DIRTBLOCK 6
-#define COLLISION_OTHER -1
+#define COLLISION_SOLID 0
+#define COLLISION_LOCK  1
+#define COLLISION_DIRTBLOCK 2
+#define COLLISION_FLOOR 3
+#define COLLISION_DIRT  4
+#define COLLISION_WATER 5
+#define COLLISION_LAVA  6
+#define COLLISION_NONE -1
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
@@ -379,44 +379,44 @@ int main(int argc, char* argv[])
             target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
             target_position2 = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
             target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
                 player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
             	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
             	player_position = target_position3;
         }
         if (key_s_pressed) {
             target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
             target_position2 = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
             target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
                 player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
             	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
             	player_position = target_position3;
         }
         if (key_a_pressed) {
             target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
             target_position2 = player_position - MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
             target_position3 = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
                 player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
             	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
             	player_position = target_position3;
         }
         if (key_d_pressed) {
             target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
             target_position2 = player_position + MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
             target_position3 = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-            if (GetCollisionTypeInPosition(target_position) == COLLISION_NONE)
+            if (GetCollisionTypeInPosition(target_position) == COLLISION_FLOOR)
                 player_position = target_position;
-            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position2) == COLLISION_FLOOR)
             	player_position = target_position2;
-            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_NONE)
+            else if (GetCollisionTypeInPosition(target_position3) == COLLISION_FLOOR)
             	player_position = target_position3;
         }
 
@@ -712,7 +712,6 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 // Função que determina o tipo de colisão em um dado ponto
 int GetCollisionTypeInPosition(vec4 position) {
     unsigned int obj_index = 0;
-    bool collision_found = false;
     std::vector<int> collision_types;
 
     while(obj_index < map_objects.size()) {
@@ -720,7 +719,26 @@ int GetCollisionTypeInPosition(vec4 position) {
         vec3 obj_size = map_objects[obj_index].object_size;
         vec3 obj_start = obj_position - obj_size / 2.0f;
         vec3 obj_end = obj_position + obj_size / 2.0f;
-        float tol = 0.3f;
+
+        float solid_tol = 0.25f;
+        float floor_tol = 0.05f;
+        float tol;
+
+        // Configura o valor de tolerância com base no bloco
+        switch(map_objects[obj_index].object_type) {
+    	case CUBE:
+    	case DIRTBLOCK: {
+    		tol = solid_tol;
+    		break;
+    	}
+    	case DIRT:
+    	case WATER:
+    	case PLANE: 
+    	default: {
+    		tol = floor_tol;
+    		break;
+    	}
+        }
 
         bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
         //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
@@ -744,6 +762,10 @@ int GetCollisionTypeInPosition(vec4 position) {
 	        	collision_types.push_back(COLLISION_DIRTBLOCK);
 	            break;
 	        }
+	        case PLANE: {
+	        	collision_types.push_back(COLLISION_FLOOR);
+	            break;
+	        }
 	        default:
 	        	break;
 	        }
@@ -753,7 +775,7 @@ int GetCollisionTypeInPosition(vec4 position) {
     }
 
     if (collision_types.size() == 0)
-    	return COLLISION_NONE;
+    	return COLLISION_FLOOR;
     else
     	return getSmallestValueInVector(collision_types);
 }
