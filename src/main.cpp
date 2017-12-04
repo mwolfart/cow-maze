@@ -40,27 +40,6 @@
 #define ROTATION_SPEED_Y 0.004f
 #define PI 3.14159265358979323846
 
-// Tipos de objetos
-#define PLANE  0
-#define COW    1
-#define BUNNY  2
-#define SPHERE 3
-#define CUBE   4
-#define PLAYER 5
-#define WATER  6
-#define DIRT   7
-#define DIRTBLOCK 8
-
-// Tipos de colisões
-#define COLLISION_NONE  0
-#define COLLISION_SOLID 1
-#define COLLISION_WATER 2
-#define COLLISION_LAVA  3
-#define COLLISION_LOCK  4
-#define COLLISION_DIRT  5
-#define COLLISION_DIRTBLOCK 6
-#define COLLISION_OTHER -1
-
 typedef glm::vec3 vec3;
 typedef glm::vec4 vec4;
 typedef std::string string;
@@ -111,6 +90,7 @@ struct MapObject {
     int object_type;
     vec3 object_position;
     vec3 object_size;
+    const char * obj_file_name;
 };
 
 // Estrutura que define a planta de um nível
@@ -138,13 +118,15 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
-void DrawMap(std::vector<std::vector<char>> plant, double seconds, double old_seconds);
+void DrawMapObjects();
+void RegisterLevelObjects(Level level);
+void RegisterObjectInMapVector(char tile_type, float x, float z);
+void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name);
+
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
-void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, double old_seconds);
 void PrintGPUInfoInTerminal();
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
@@ -181,6 +163,31 @@ std::map<string, SceneObject> g_VirtualScene;
 std::stack<glm::mat4>  g_MatrixStack;
 // Vetor que contém dados sobre os objetos dentro do mapa (usado para tratar colisões)
 std::vector<MapObject> map_objects;
+
+/***************************************/
+/** CONSTANTES ESPECÍFICAS DE OBJETOS **/
+/***************************************/
+
+// Tipos de objetos
+#define PLANE  0
+#define COW    1
+#define BUNNY  2
+#define SPHERE 3
+#define CUBE   4
+#define PLAYER 5
+#define WATER  6
+#define DIRT   7
+#define DIRTBLOCK 8
+
+// Tipos de colisões
+#define COLLISION_NONE  0
+#define COLLISION_SOLID 1
+#define COLLISION_WATER 2
+#define COLLISION_LAVA  3
+#define COLLISION_LOCK  4
+#define COLLISION_DIRT  5
+#define COLLISION_DIRTBLOCK 6
+#define COLLISION_OTHER -1
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
@@ -350,18 +357,13 @@ int main(int argc, char* argv[])
 
     // Carrega nível um
     Level level_one = LoadLevelFromFile("../../data/levels/1");
+    RegisterLevelObjects(level_one);
     player_position = GetPlayerSpawnCoordinates(level_one.plant);
     camera_lookat_l = player_position;
-
-    // Utilizamos o tempo para alternar a textura de objetos animados
-    double seconds = (double) glfwGetTime();
-    double old_seconds = seconds;
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
-        old_seconds = seconds;
-
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -436,8 +438,7 @@ int main(int argc, char* argv[])
         // RESTO DO MAPA //
         ///////////////////
 
-        seconds = (double) glfwGetTime();
-        DrawMap(level_one.plant, seconds, old_seconds);
+        DrawMapObjects();
 
         // Animação dos tiles (todos são animados em simetria)
         // CASO DESEJA-SE ANIMÁ-LOS DE FORMA INDEPENDENTE, deve-se
@@ -469,91 +470,88 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-// Função que desenha o mapa na cena com base na sua planta
-void DrawMap(std::vector<std::vector<char>> plant, double seconds, double old_seconds) {
-    int map_height = plant.size();
-    int map_width = plant[0].size();
-    float center_x = (map_width-1)/2.0f;
-    float center_z = (map_height-1)/2.0f;
+// Função que registra os objetos do nível com base na sua planta
+void RegisterLevelObjects(Level level) {
+    float center_x = (level.width-1)/2.0f;
+    float center_z = (level.height-1)/2.0f;
 
-    for(int line = 0; line < map_height; line++) {
-        for(int col = 0; col < map_width; col++) {
-            char current_tile = plant[line][col];
+    for(int line = 0; line < level.height; line++) {
+        for(int col = 0; col < level.width; col++) {
+            char current_tile = level.plant[line][col];
             float x = -(center_x - col);
             float z = -(center_z - line);
 
-            DrawTileInCoordinate(current_tile, x, z, seconds, old_seconds);
+            RegisterObjectInMapVector(current_tile, x, z);
         }
     }
-
-    registered_all_objects = true;
 }
 
-// Função auxiliar usada para simplificar o desenho do mapa.
-// Desenha um bloco em dada posição
-// CASO SE QUEIRA DEFINIR UM NOVO TIPO DE BLOCO, DEVE-SE
-//  ADICIONAR MAIS UMA CLÁUSULA PARA O SWITCH
-void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, double old_seconds) {
-    // PARÂMETROS DE TAMANHO E POSICIONAMENTO DOS TILES
-
-    // Cubo
+// Função que registra um objeto em dada posição do mapa
+// CASO SE QUEIRA ADICIONAR NOVOS OBJETOS, DEVE-SE FAZÊ-LO AQUI
+void RegisterObjectInMapVector(char tile_type, float x, float z) {
+    /* Propriedades de objetos (deslocamento, tamanho, etc) */
+    // Dimensões
     vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
     float cube_vertical_shift = -0.5f;
 
-    //water
+    // Tile plano
     vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
     float floor_shift = -1.0f;
 
-    // PLACEMENT DOS TILES
-    /* Adicione novos tiles abaixo */
+    /* Adicione novos tipos de objetos abaixo */
     switch(tile_type) {
     // Cubo
     case 'B': {
-        glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
-        if(!registered_all_objects)
-            RegisterObjectInMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
-        DrawVirtualObject("cube", CUBE, model);
+        RegisterObjectInMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size, "cube");
         break;
     }
 
-    //Water
+    // Água
     case 'W':{
-        glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
-        if(!registered_all_objects)
-            RegisterObjectInMap(WATER, vec3(x, floor_shift, z), tile_size);
-        DrawVirtualObject("plane", WATER, model);
+        RegisterObjectInMap(WATER, vec3(x, floor_shift, z), tile_size, "plane");
         break;
     }
 
-    //Dirt
+    // Terra
     case 'd':{
-    	glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
-        if(!registered_all_objects)
-            RegisterObjectInMap(DIRT, vec3(x, floor_shift, z), tile_size);
-        DrawVirtualObject("plane", DIRT, model);
+        RegisterObjectInMap(DIRT, vec3(x, floor_shift, z), tile_size, "plane");
         break;
     }
 
-    //Dirt block
+    // Bloco de terra
     case 'D':{
-    	glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
-        if(!registered_all_objects)
-            RegisterObjectInMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size);
-        DrawVirtualObject("cube", DIRTBLOCK, model);
+        RegisterObjectInMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size, "cube");
         break;
     }
 
-    // Player spawn
+    // Jogador e piso
     case 'P':
-    // Piso (vazio)
     case 'F':{
-        glm::mat4 model = Matrix_Translate(x,-1.0f,z) * Matrix_Scale(1/2.0f, 1.0f, 1/2.0f);
-        DrawVirtualObject("plane", PLANE, model);
+        RegisterObjectInMap(PLANE, vec3(x, floor_shift, z), tile_size, "plane");
         break;
     }
 
     default:
         break;
+    }
+}
+
+// Função que adiciona um objeto ao mapa
+void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name) {
+    MapObject new_object;
+    new_object.object_type = obj_id;
+    new_object.object_size = obj_size;
+    new_object.object_position = obj_position;
+    new_object.obj_file_name = obj_file_name;
+    map_objects.push_back(new_object);
+}
+
+// Função que desenha os objetos na cena (com base no vetor de objetos)
+void DrawMapObjects() {
+    for(int i = 0; i < map_objects.size(); i++) {
+        MapObject current_object = map_objects[i];
+        glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z);
+        DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
     }
 }
 
@@ -684,15 +682,6 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
-// Função que adiciona um objeto ao mapa
-void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size) {
-    MapObject new_object;
-    new_object.object_type = obj_id;
-    new_object.object_size = obj_size;
-    new_object.object_position = obj_position;
-    map_objects.push_back(new_object);
-}
-
 // Função que determina o tipo de colisão em um dado ponto
 int GetCollisionTypeInPosition(vec4 position) {
     unsigned int obj_index = 0;
@@ -722,7 +711,7 @@ int GetCollisionTypeInPosition(vec4 position) {
         case CUBE:
             return COLLISION_SOLID;
         default:
-            return COLLISION_OTHER;
+            return COLLISION_NONE;
         }
     }
 }
