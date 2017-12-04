@@ -88,7 +88,7 @@ struct ObjModel {
 // Estrutura que guarda uma lista de objetos presentes
 struct MapObject {
     int object_type;
-    vec3 object_position;
+    vec4 object_position;
     vec3 object_size;
     const char * obj_file_name;
 };
@@ -121,14 +121,13 @@ void PopMatrix(glm::mat4& M);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 Level LoadLevelFromFile(const char* filepath);
 void DrawMapObjects();
-void CalculatePlayerPosition();
-void UpdatePlayerPosition(vec4 target_pos, vec4 target_pos_xonly, vec4 target_pos_zonly);
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
-void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name);
-int GetMostColliderObjectInPosition(vec4 position);
-int GetMostColliderObjectInList(std::vector<int> objects_in_position); 
-std::vector<int> GetObjectsInPosition(vec4 position);
+void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name);
+int GetObjectInPosition(vec4 position);
+int GetDensestObjectInVector(std::vector<int> object_id_list);
+float GetTileToleranceValue(int object_type);
+void MovePlayer();
 int MoveBlock(int object_index);
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
@@ -207,11 +206,11 @@ bool g_ShowInfoText = false;
 
 // Variáveis de posição do jogador
 vec4 player_position;
-vec4 player_direction = vec4(0.0f, 0.0f, 1.0f, 0.0f);
-float straight_sign = 1.0f;
-float sideways_sign = 0.0f;
-vec4 straight_vector;
-vec4 sideways_vector;
+float straight_vector_sign = 1.0f;
+float sideways_vector_sign = 0.0f;
+vec4 straight_vector; // Vetor direção reto do player (diferente do vetor camera_direction)
+vec4 sideways_vector; // Vetor direção lateral do player (diferente do vetor U da câmera)
+vec4 player_direction = vec4(0.0f, 0.0f, 1.0f, 0.0f); // Vetor direção do player, frequentemente igual à soma de straight + sideways
 
 // CÂMERA LOOKAT
 float g_CameraTheta = PI; // Ângulo no plano ZX em relação ao eixo Z
@@ -373,11 +372,11 @@ int main(int argc, char* argv[])
         		water_death_timer = 1000;
         		player_position = GetPlayerSpawnCoordinates(level_one.plant);
     			camera_lookat_l = player_position;
-    			straight_sign = 1.0f;
-				sideways_sign = 0.0f;
+    			straight_vector_sign = 1.0f;
+				sideways_vector_sign = 0.0f;
         	}
         }
-        else CalculatePlayerPosition();
+        else MovePlayer();
 
         // Controle do tipo de câmera
         if (g_useFirstPersonCamera) {
@@ -414,8 +413,8 @@ int main(int argc, char* argv[])
         // JOGADOR //
         /////////////
 
-        straight_vector = straight_sign * camera_xz_direction;
-    	sideways_vector = sideways_sign * camera_u_vector;
+        straight_vector = straight_vector_sign * camera_xz_direction;
+    	sideways_vector = sideways_vector_sign * camera_u_vector;
     	player_direction = straight_vector + sideways_vector;
 
         float vecangle = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
@@ -491,33 +490,33 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     switch(tile_type) {
     // Cubo
     case 'B': {
-        RegisterObjectInMap(WALL, vec3(x, cube_vertical_shift, z), cube_size, "cube");
+        RegisterObjectInMap(WALL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
         break;
     }
 
     // Água
     case 'W':{
-        RegisterObjectInMap(WATER, vec3(x, floor_shift, z), tile_size, "plane");
+        RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
 
     // Terra
     case 'd':{
-        RegisterObjectInMap(DIRT, vec3(x, floor_shift, z), tile_size, "plane");
+        RegisterObjectInMap(DIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
 
     // Bloco de terra
     case 'D':{
-        RegisterObjectInMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec3(x, floor_shift, z), tile_size, "plane");
+        RegisterObjectInMap(DIRTBLOCK, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
 
     // Jogador e piso
     case 'P':
     case 'F':{
-        RegisterObjectInMap(FLOOR, vec3(x, floor_shift, z), tile_size, "plane");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
 
@@ -527,7 +526,7 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
 }
 
 // Função que adiciona um objeto ao mapa
-void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name) {
+void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name) {
     MapObject new_object;
     new_object.object_type = obj_id;
     new_object.object_size = obj_size;
@@ -643,23 +642,16 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(object_id_uniform, object_id);
 
-    // "Ligamos" o VAO. Informamos que queremos utilizar os atributos de
-    // vértices apontados pelo VAO criado pela função BuildTrianglesAndAddToVirtualScene(). Veja
-    // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
+    // "Ligamos" o VAO.
     glBindVertexArray(g_VirtualScene[object_name].vertex_array_object_id);
 
-    // Setamos as variáveis "bbox_min" e "bbox_max" do fragment shader
-    // com os parâmetros da axis-aligned bounding box (AABB) do modelo.
     vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
     vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
     glUniform4f(bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
     glUniform4f(bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
-    // apontados pelo VAO como linhas. Veja a definição de
-    // g_VirtualScene[""] dentro da função BuildTrianglesAndAddToVirtualScene(), e veja
-    // a documentação da função glDrawElements() em
-    // http://docs.gl/gl3/glDrawElements.
+    // apontados pelo VAO como linhas.
     glDrawElements(
         g_VirtualScene[object_name].rendering_mode,
         g_VirtualScene[object_name].num_indices,
@@ -667,133 +659,145 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
         (void*)g_VirtualScene[object_name].first_index
     );
 
-    // "Desligamos" o VAO, evitando assim que operações posteriores venham a
-    // alterar o mesmo. Isso evita bugs.
+    // "Desligamos" o VAO
     glBindVertexArray(0);
 }
 
-// Função que retorna os objetos com os quais uma posição colide
-std::vector<int> GetObjectsInPosition(vec4 position) {
+/*
+   ALERTA DE GAMBIARRA
+   Eu não soube como representar/me refeir à isso, mas existe
+   uma prioridade de colisão nos objetos. Por exemplo, se o player
+   colide com sujeira e com sólido ao mesmo tempo, o sólido
+   tem prioridade.
+   Eu defini isso como "densidade". A interseção mais comum que acontece
+   é a de piso + cubo de sujeira (um cubo de sujeira está sob um piso).
+   Então, sempre que eu escrever "mais denso" estou me referindo ao
+   objeto de menor ID (definido nos DEFINES lá em cima)
+ */
+
+// Função que retorna o objeto presente em dada posição
+// Em caso de empate, retorna o mais "denso" (com id de menor valor)
+int GetObjectInPosition(vec4 position) {
     unsigned int obj_index = 0;
+    // Primeiro, salva uma lista de objetos presentes na posição
     std::vector<int> objects_in_position;
 
     while(obj_index < map_objects.size()) {
-        vec3 obj_position = map_objects[obj_index].object_position;
+        vec4 obj_position = map_objects[obj_index].object_position;
         vec3 obj_size = map_objects[obj_index].object_size;
-        vec3 obj_start = obj_position - obj_size / 2.0f;
-        vec3 obj_end = obj_position + obj_size / 2.0f;
 
-        float solid_tol = 0.25f;
-        float floor_tol = 0.1f;
-        float tol;
-
-        // Configura o valor de tolerância com base no bloco
-        switch(map_objects[obj_index].object_type) {
-	    	case WALL:
-	    	case DIRTBLOCK: {
-	    		tol = solid_tol;
-	    		break;
-	    	}
-	    	case DIRT:
-	    	case WATER:
-	    	case FLOOR:
-	    	default: {
-	    		tol = floor_tol;
-	    		break;
-	    	}
-        }
+        // Computa dimensões e limites do objeto
+        vec4 obj_size_vector = vec4(obj_size.x, obj_size.y, obj_size.z, 0.0f);
+        vec4 obj_start = obj_position - obj_size_vector / 2.0f;
+        vec4 obj_end = obj_position + obj_size_vector / 2.0f;
+        float tol = GetTileToleranceValue(map_objects[obj_index].object_type);
 
         bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
         //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
         bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
 
         if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
-        	objects_in_position.push_back(obj_index);
+        	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
 
         obj_index++;
     }
 
-    return objects_in_position;
+    // Retorna apenas o objeto mais denso dentre os colididos.
+    return GetDensestObjectInVector(objects_in_position);
 }
 
-// Retorna o elemento mais "colidor" em uma lista/vetor
-int GetMostColliderObjectInList(std::vector<int> objects_in_position) {
-	int minimum_type = 100;
-	int most_collider = -1;
+// Retorna o elemento mais "denso" em uma lista/vetor
+int GetDensestObjectInVector(std::vector<int> object_id_vec) {
+	int minimum_type = 100; // Inicializa a densidade bem fraca
+	int most_dense = -1; // Mais denso não existe ainda
 
-	for (unsigned int i = 0; i < objects_in_position.size(); i++) {
-		if (map_objects[objects_in_position[i]].object_type < minimum_type) {
-			most_collider = objects_in_position[i];
-			minimum_type = map_objects[most_collider].object_type;
+	for (unsigned int i = 0; i < object_id_vec.size(); i++) {
+		if (map_objects[object_id_vec[i]].object_type < minimum_type) {
+			most_dense = object_id_vec[i]; // Atualiza mais denso
+			minimum_type = map_objects[most_dense].object_type;
 		}
 	}
 
-	return most_collider;
+	return most_dense;
 }
 
-// Retorna o elemento mais "colidor" em uma posição
-int GetMostColliderObjectInPosition(vec4 position) {
-	std::vector<int> objects_in_position = GetObjectsInPosition(position);
-	return GetMostColliderObjectInList(objects_in_position); 
+// Dado um tipo de objeto, retorna o valor de tolerância
+// Usado para a função de colisão
+float GetTileToleranceValue(int object_type) {
+	switch(object_type) {
+    	case WALL:
+    	case DIRTBLOCK: {
+    		return 0.25f;
+    	}
+    	case DIRT:
+    	case WATER:
+    	case FLOOR:
+    	default: {
+    		return 0.1f;
+    	}
+    }
 }
-
-int GetMostColliderObjectInPosition(vec3 position) {
-	vec4 new_position = vec4(position.x, position.y, position.z, 1.0f);
-	std::vector<int> objects_in_position = GetObjectsInPosition(new_position);
-	return GetMostColliderObjectInList(objects_in_position); 
-}
-
 
 // Função que calcula a posição nova do jogador (ao se movimentar)
-void CalculatePlayerPosition() {
+void MovePlayer() {
+
+	/*
+	   ALERTA DE GAMBIARRA: as funções de verificação das teclas WASD
+	   alteram o módulo dos vetores de direção. Isso é usado para que o
+	   player sempre olhe para a direção que está andando, mas que a
+	   câmera não necessariamente faça o mesmo (bem típico de jogos em
+	   terceira pessoa).
+	   Sempre que a tecla relativa à uma direção é pressionada, testa-se se
+	   a outra direção está nula.
+	 */
+
     if (key_w_pressed) {
-    	straight_sign = 1.0f;
+    	straight_vector_sign = 1.0f;
     	if (!key_a_pressed && !key_d_pressed)
-    		sideways_sign = 0.0f;
+    		sideways_vector_sign = 0.0f;
     }
     else if (key_s_pressed) {
-    	straight_sign = -1.0f;
+    	straight_vector_sign = -1.0f;
     	if (!key_a_pressed && !key_d_pressed)
-    		sideways_sign = 0.0f;
+    		sideways_vector_sign = 0.0f;
     }
 
     if (key_a_pressed) {
-    	sideways_sign = -1.0f;
+    	sideways_vector_sign = -1.0f;
     	if (!key_s_pressed && !key_w_pressed)
-    		straight_sign = 0.0f;
+    		straight_vector_sign = 0.0f;
     }
     else if (key_d_pressed) {
-    	sideways_sign = 1.0f;
+    	sideways_vector_sign = 1.0f;
 	    if (!key_s_pressed && !key_w_pressed)
-	    	straight_sign = 0.0f;
+	    	straight_vector_sign = 0.0f;
 	}
 
+	// Caso alguma tecla tenha sido pressionada, altera a posição do jogador e se testa colisões
     if (key_w_pressed || key_s_pressed || key_d_pressed || key_a_pressed) {
+
+    	// Primeiro testamos se existe uma colisão com sólidos na direção direta do player.
 	    vec4 target_pos = player_position + MOVEMENT_AMOUNT * player_direction;
-	    vec4 target_pos_straight = player_position + MOVEMENT_AMOUNT * vec4(player_direction.x, 0.0f, 0.0f, 0.0f);
-	    vec4 target_pos_sideways = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction.z, 0.0f);
-
-	    int collided_object_index = GetMostColliderObjectInPosition(target_pos);
-	    int collided_object_index_straight = GetMostColliderObjectInPosition(target_pos_straight);
-	    int collided_object_index_sideways = GetMostColliderObjectInPosition(target_pos_sideways);
-
+	    int collided_object_index = GetObjectInPosition(target_pos);
 	    int coll_type = map_objects[collided_object_index].object_type;
-	    int coll_type_straight = map_objects[collided_object_index_straight].object_type;
-	    int coll_type_sideways = map_objects[collided_object_index_sideways].object_type;
 
 	    if (coll_type == WALL) {
-	        if (!(coll_type_straight == WALL)) {
-	            coll_type = coll_type_straight;
-	            collided_object_index = collided_object_index_straight;
-	            target_pos = target_pos_straight;
-	        }
-	        else if (!(coll_type_sideways == WALL)) {
-	            coll_type = coll_type_sideways;
-	            collided_object_index = collided_object_index_sideways;
-	            target_pos = target_pos_sideways;
-	        }
+	    	// Caso exista, vamos testar na posição reta.
+	    	target_pos = player_position + MOVEMENT_AMOUNT * vec4(player_direction.x, 0.0f, 0.0f, 0.0f);
+	    	collided_object_index = GetObjectInPosition(target_pos);
+	    	coll_type = map_objects[collided_object_index].object_type;
+
+	    	if (coll_type == WALL) {
+	    		// Caso exista, finalmente, testamos a posição lateral.
+	    		target_pos = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction.z, 0.0f);
+	    		collided_object_index = GetObjectInPosition(target_pos);
+	    		coll_type = map_objects[collided_object_index].object_type;
+
+	    		// Se nenhuma delas está livre, o player ficará preso.
+	    	}
 	    }
 	    
+	    // Testa-se o tipo de colisão.
 	    switch(coll_type) {
 	    case WATER: {
 	        player_position = target_pos;
@@ -825,19 +829,19 @@ void CalculatePlayerPosition() {
 
 // Função que move um bloco
 int MoveBlock(int object_index) {
-	if (straight_sign != 0) {
-		map_objects[object_index].object_position.x += straight_sign * MOVEMENT_AMOUNT;
-		int collider_obj = GetMostColliderObjectInPosition(map_objects[object_index].object_position);
+	if (straight_vector_sign != 0) {
+		map_objects[object_index].object_position.x += straight_vector_sign * MOVEMENT_AMOUNT;
+		int collider_obj = GetObjectInPosition(map_objects[object_index].object_position);
 		if (map_objects[collider_obj].object_type < FLOOR) {
-			map_objects[object_index].object_position.x -= straight_sign * MOVEMENT_AMOUNT;
+			map_objects[object_index].object_position.x -= straight_vector_sign * MOVEMENT_AMOUNT;
 			return -1;
 		}
 	}
-	else if (sideways_sign != 0) {
-		map_objects[object_index].object_position.z += sideways_sign * MOVEMENT_AMOUNT;
-		int collider_obj = GetMostColliderObjectInPosition(map_objects[object_index].object_position);
+	else if (sideways_vector_sign != 0) {
+		map_objects[object_index].object_position.z += sideways_vector_sign * MOVEMENT_AMOUNT;
+		int collider_obj = GetObjectInPosition(map_objects[object_index].object_position);
 		if (map_objects[collider_obj].object_type < FLOOR) {
-			map_objects[object_index].object_position.z -= sideways_sign * MOVEMENT_AMOUNT;
+			map_objects[object_index].object_position.z -= sideways_vector_sign * MOVEMENT_AMOUNT;
 			return -1;
 		}
 	}
