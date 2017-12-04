@@ -138,7 +138,7 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void AddObjectToMap(int obj_id, vec3 obj_position, vec3 obj_size);
+void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
@@ -227,6 +227,9 @@ bool key_w_pressed = false;
 bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
+
+// Variável de controle de registro dos objetos (para não cadastrar mais de uma vez)
+bool registered_all_objects = false;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -354,7 +357,6 @@ int main(int argc, char* argv[])
     double seconds = (double) glfwGetTime();
     double old_seconds = seconds;
 
-
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -421,8 +423,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-
-
         /////////////
         // JOGADOR //
         /////////////
@@ -430,7 +430,7 @@ int main(int argc, char* argv[])
         float vecangle = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
         if (player_direction[2] > 0.0f)
             vecangle = -vecangle;
-        DrawPlayer(player_position[0], player_position[1], player_position[2], vecangle - PI/2, 0.4f);
+        DrawPlayer(player_position[0], player_position[1] - 0.3f, player_position[2], vecangle - PI/2, 0.3f);
 
         ///////////////////
         // RESTO DO MAPA //
@@ -483,10 +483,10 @@ void DrawMap(std::vector<std::vector<char>> plant, double seconds, double old_se
             float z = -(center_z - line);
 
             DrawTileInCoordinate(current_tile, x, z, seconds, old_seconds);
-
-
         }
     }
+
+    registered_all_objects = true;
 }
 
 // Função auxiliar usada para simplificar o desenho do mapa.
@@ -510,7 +510,8 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     // Cubo
     case 'B': {
         glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
-        AddObjectToMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
+        if(!registered_all_objects)
+            RegisterObjectInMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size);
         DrawVirtualObject("cube", CUBE, model);
         break;
     }
@@ -518,7 +519,8 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     //Water
     case 'W':{
         glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
-        AddObjectToMap(WATER, vec3(x, floor_shift, z), tile_size);
+        if(!registered_all_objects)
+            RegisterObjectInMap(WATER, vec3(x, floor_shift, z), tile_size);
         DrawVirtualObject("plane", WATER, model);
         break;
     }
@@ -526,7 +528,8 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     //Dirt
     case 'd':{
     	glm::mat4 model = Matrix_Translate(x, floor_shift, z) * Matrix_Scale(0.5f, 1.0f, 0.5f);
-        AddObjectToMap(DIRT, vec3(x, floor_shift, z), tile_size);
+        if(!registered_all_objects)
+            RegisterObjectInMap(DIRT, vec3(x, floor_shift, z), tile_size);
         DrawVirtualObject("plane", DIRT, model);
         break;
     }
@@ -534,7 +537,8 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
     //Dirt block
     case 'D':{
     	glm::mat4 model = Matrix_Translate(x, cube_vertical_shift, z);
-        AddObjectToMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size);
+        if(!registered_all_objects)
+            RegisterObjectInMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size);
         DrawVirtualObject("cube", DIRTBLOCK, model);
         break;
     }
@@ -547,7 +551,6 @@ void DrawTileInCoordinate(char tile_type, float x, float z, double seconds, doub
         DrawVirtualObject("plane", PLANE, model);
         break;
     }
-
 
     default:
         break;
@@ -682,7 +685,7 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 }
 
 // Função que adiciona um objeto ao mapa
-void AddObjectToMap(int obj_id, vec3 obj_position, vec3 obj_size) {
+void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size) {
     MapObject new_object;
     new_object.object_type = obj_id;
     new_object.object_size = obj_size;
