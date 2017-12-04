@@ -19,14 +19,21 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define PLANE  0
-#define COW    1
-#define BUNNY  2
-#define SPHERE 3
-#define CUBE   4
-#define WATER  6
-#define DIRT   7
-#define DIRTBLOCK 8
+#define COW         1
+#define WALL        10
+#define LOCK        11
+#define DIRTBLOCK   12
+#define FLOOR       13
+#define DIRT        14
+#define WATER       15
+#define LAVA        16
+
+#define PLAYER_HEAD     60
+#define PLAYER_TORSO    61
+#define PLAYER_ARMS     62
+#define PLAYER_HANDS    63
+#define PLAYER_LEGS     64
+#define PLAYER_FEET     65
 
 uniform int object_id;
 
@@ -98,26 +105,7 @@ void main()
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    if ( object_id == SPHERE )
-    {
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-        vec4 p_vector = position_model - bbox_center;
-
-        float px = position_model[0];
-        float py = position_model[1];
-        float pz = position_model[2];
-
-        float rho = sqrt(pow(px,2) + pow(py,2) + pow(pz, 2));
-        float theta = atan(px, pz);
-        float phi = asin(py/rho);
-
-        U = (theta + M_PI) / (2 * M_PI);
-        V = (phi + M_PI/2) / M_PI;
-
-        vec3 Kd = texture(TextureImage0, vec2(U,V)).rgb;
-        color = Kd * (lambert + 0.01);
-    }
-    else if ( object_id == BUNNY || object_id == COW )
+    if ( object_id == COW )
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -134,7 +122,7 @@ void main()
         vec3 Kd = texture(TextureImage2, vec2(U,V)).rgb;
         color = Kd;
     }
-    else if ( object_id == PLANE )
+    else if ( object_id == FLOOR )
     {
        /* int number_of_repetitions = 32;
         float period = 1.0f/number_of_repetitions;
@@ -177,7 +165,7 @@ void main()
 
         color = Kd;
     }
-    else if ( object_id == CUBE )
+    else if ( object_id == WALL )
     {
         U = texcoords.x;
         V = texcoords.y;
@@ -200,6 +188,15 @@ void main()
 
         vec3 Kd = texture(TextureImage20, vec2(U,V)).rgb;
         color = Kd;
+    }
+    else if ( object_id == PLAYER_HEAD || object_id == PLAYER_FEET || object_id == PLAYER_HANDS) {
+        color = vec3(0.85f, 0.8f, 0.5f);
+    }
+    else if ( object_id == PLAYER_ARMS || object_id == PLAYER_TORSO ) {
+        color = vec3(0.05f, 0.4f, 0.1f);
+    }
+    else if ( object_id == PLAYER_LEGS ) {
+        color = vec3(0.4f, 0.3f, 0.1f);
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.

@@ -119,16 +119,17 @@ void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
-int GetCollisionTypeInPosition(vec4 position);
 Level LoadLevelFromFile(const char* filepath);
 void DrawMapObjects();
 void CalculatePlayerPosition();
 void UpdatePlayerPosition(vec4 target_pos, vec4 target_pos_xonly, vec4 target_pos_zonly);
-int GetObjectIndexInCoordinate(int x, int z);
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec3 obj_position, vec3 obj_size, const char * obj_file_name);
-int getSmallestValueInVector(std::vector<int> vecN);
+int GetMostColliderObjectInPosition(vec4 position);
+int GetMostColliderObjectInList(std::vector<int> objects_in_position); 
+std::vector<int> GetObjectsInPosition(vec4 position);
+int MoveBlock(int object_index);
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 void PrintGPUInfoInTerminal();
@@ -173,25 +174,21 @@ std::vector<MapObject> map_objects;
 /***************************************/
 
 // Tipos de objetos
-#define PLANE  0
-#define COW    1
-#define BUNNY  2
-#define SPHERE 3
-#define CUBE   4
-#define PLAYER 5
-#define WATER  6
-#define DIRT   7
-#define DIRTBLOCK 8
+#define COW 		1
+#define WALL 		10
+#define LOCK 		11
+#define DIRTBLOCK 	12
+#define FLOOR 		13
+#define DIRT 		14
+#define WATER 		15
+#define LAVA 		16
 
-// Tipos de colisões
-#define COLLISION_SOLID 0
-#define COLLISION_LOCK  1
-#define COLLISION_DIRTBLOCK 2
-#define COLLISION_FLOOR 3
-#define COLLISION_DIRT  4
-#define COLLISION_WATER 5
-#define COLLISION_LAVA  6
-#define COLLISION_NONE -1
+#define PLAYER_HEAD 	60
+#define PLAYER_TORSO 	61
+#define PLAYER_ARMS 	62
+#define PLAYER_HANDS 	63
+#define PLAYER_LEGS 	64
+#define PLAYER_FEET 	65
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
@@ -210,19 +207,24 @@ bool g_ShowInfoText = false;
 
 // Variáveis de posição do jogador
 vec4 player_position;
-vec4 player_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f);
+vec4 player_direction = vec4(0.0f, 0.0f, 1.0f, 0.0f);
+float straight_sign = 1.0f;
+float sideways_sign = 0.0f;
+vec4 straight_vector;
+vec4 sideways_vector;
 
 // CÂMERA LOOKAT
 float g_CameraTheta = PI; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 2.5f; // Distância da câmera para a origem
+float g_CameraDistance = 2.5f; // Distância da câmera para a origem.
+vec4 camera_lookat_l;
 
 // CÂMERA FIRST PERSON
 vec4 camera_position_c  = vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
-vec4 camera_view_vector = player_direction; // Vetor "view", sentido para onde a câmera está virada
+vec4 camera_xz_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f); // Vetor que representa para onde a câmera aponta (Sem levar em conta o eixo y)
+vec4 camera_view_vector = camera_xz_direction; // Vetor "view", sentido para onde a câmera está virada
 vec4 camera_up_vector   = vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
-vec4 camera_lookat_l;
 
 // Variável de controle da câmera
 bool g_useFirstPersonCamera = false;
@@ -239,8 +241,9 @@ bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
 
-// Variável de controle de registro dos objetos (para não cadastrar mais de uma vez)
-bool registered_all_objects = false;
+// Variáveis de animações de mortes
+bool death_by_water = false;
+int water_death_timer = 1000;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -374,7 +377,19 @@ int main(int argc, char* argv[])
         glUseProgram(program_id);
 
         // Movimentação do personagem
-        CalculatePlayerPosition();
+        if (death_by_water) {
+        	player_position[1] -= 0.01f;
+        	water_death_timer -= 10;
+        	if (water_death_timer <= 0) {
+        		death_by_water = false;
+        		water_death_timer = 1000;
+        		player_position = GetPlayerSpawnCoordinates(level_one.plant);
+    			camera_lookat_l = player_position;
+    			straight_sign = 1.0f;
+				sideways_sign = 0.0f;
+        	}
+        }
+        else CalculatePlayerPosition();
 
         // Controle do tipo de câmera
         if (g_useFirstPersonCamera) {
@@ -392,11 +407,10 @@ int main(int argc, char* argv[])
             camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector);
         }
 
-        player_direction = vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
+        camera_xz_direction = vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
-		//glm::mat4 model = Matrix_Identity();
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -20.0f; // Posição do "far plane"
 
@@ -412,10 +426,14 @@ int main(int argc, char* argv[])
         // JOGADOR //
         /////////////
 
+        straight_vector = straight_sign * camera_xz_direction;
+    	sideways_vector = sideways_sign * camera_u_vector;
+    	player_direction = straight_vector + sideways_vector;
+
         float vecangle = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
         if (player_direction[2] > 0.0f)
             vecangle = -vecangle;
-        DrawPlayer(player_position[0], player_position[1] - 0.3f, player_position[2], vecangle - PI/2, 0.3f);
+        DrawPlayer(player_position[0], player_position[1] - 0.3f, player_position[2], vecangle + PI/2, 0.3f);
 
         ///////////////////
         // RESTO DO MAPA //
@@ -485,7 +503,7 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     switch(tile_type) {
     // Cubo
     case 'B': {
-        RegisterObjectInMap(CUBE, vec3(x, cube_vertical_shift, z), cube_size, "cube");
+        RegisterObjectInMap(WALL, vec3(x, cube_vertical_shift, z), cube_size, "cube");
         break;
     }
 
@@ -504,13 +522,14 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     // Bloco de terra
     case 'D':{
         RegisterObjectInMap(DIRTBLOCK, vec3(x, cube_vertical_shift, z), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec3(x, floor_shift, z), tile_size, "plane");
         break;
     }
 
     // Jogador e piso
     case 'P':
     case 'F':{
-        RegisterObjectInMap(PLANE, vec3(x, floor_shift, z), tile_size, "plane");
+        RegisterObjectInMap(FLOOR, vec3(x, floor_shift, z), tile_size, "plane");
         break;
     }
 
@@ -546,24 +565,24 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
     model = Matrix_Translate(x, y, z) * Matrix_Rotate_Y(angle_y);
     PushMatrix(model);
         model = model * Matrix_Scale(0.8f * scale, 1.1f * scale, 0.2f * scale);
-        DrawVirtualObject("cube", PLAYER, model);
+        DrawVirtualObject("cube", PLAYER_TORSO, model);
     PopMatrix(model);
     PushMatrix(model);
         model = model * Matrix_Translate(-0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação do braço direito
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço direito
-            DrawVirtualObject("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER_ARMS, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço direito
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço direito
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_ARMS, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão direita
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_HANDS, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -571,18 +590,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.55f * scale, 0.05f * scale, 0.0f * scale); // Translação para o braço esquerdo
         PushMatrix(model);
             model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do braço esquerdo
-            DrawVirtualObject("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER_ARMS, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação do antebraço esquerdo
             PushMatrix(model);
                 model = model * Matrix_Scale(0.2f * scale, 0.7f * scale, 0.2f * scale); // Escalamento do antebraço esquerdo
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_ARMS, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.45f * scale, 0.0f * scale); // Translação da mão esquerda
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.2f * scale);
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_HANDS, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -590,18 +609,18 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(-0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna direita
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa direita
-            DrawVirtualObject("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER_LEGS, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela direita
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela direita
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_LEGS, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé direito
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé direito
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_FEET, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
@@ -609,25 +628,25 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
         model = model * Matrix_Translate(0.2f * scale, -1.0f * scale, 0.0f * scale); // Translação para a perna esquerda
         PushMatrix(model);
             model = model * Matrix_Scale(0.3f * scale, 0.8f * scale, 0.3f * scale); // Escalamento da coxa esquerda
-            DrawVirtualObject("cube", PLAYER, model);
+            DrawVirtualObject("cube", PLAYER_LEGS, model);
         PopMatrix(model);
         PushMatrix(model);
             model = model * Matrix_Translate(0.0f * scale, -0.85f * scale, 0.0f * scale); // Translação para a canela esquerda
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f * scale, 0.8f * scale, 0.25f * scale); // Escalamento da canela esquerda
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_LEGS, model);
             PopMatrix(model);
             PushMatrix(model);
                 model = model * Matrix_Translate(0.0f * scale, -0.5f * scale, 0.1f * scale); // Translação para o pé esquerdo
                 model = model * Matrix_Scale(0.2f * scale, 0.1f * scale, 0.4f * scale); // Escalamento do pé esquerdo
-                DrawVirtualObject("cube", PLAYER, model);
+                DrawVirtualObject("cube", PLAYER_FEET, model);
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
     model = model * Matrix_Rotate_Z(3.14);
     model = model * Matrix_Translate(0.0f * scale, -0.75f * scale, 0.0f * scale); // Translação para a cabeça
     model = model * Matrix_Scale(0.35f * scale, 0.35f * scale, 0.35f * scale); // Escalamento da cabeça
-    DrawVirtualObject("cube", PLAYER, model);
+    DrawVirtualObject("cube", PLAYER_HEAD, model);
 }
 
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
@@ -665,10 +684,10 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
-// Função que determina o tipo de colisão em um dado ponto
-int GetCollisionTypeInPosition(vec4 position) {
+// Função que retorna os objetos com os quais uma posição colide
+std::vector<int> GetObjectsInPosition(vec4 position) {
     unsigned int obj_index = 0;
-    std::vector<int> collision_types;
+    std::vector<int> objects_in_position;
 
     while(obj_index < map_objects.size()) {
         vec3 obj_position = map_objects[obj_index].object_position;
@@ -677,146 +696,164 @@ int GetCollisionTypeInPosition(vec4 position) {
         vec3 obj_end = obj_position + obj_size / 2.0f;
 
         float solid_tol = 0.25f;
-        float floor_tol = 0.05f;
+        float floor_tol = 0.1f;
         float tol;
 
         // Configura o valor de tolerância com base no bloco
         switch(map_objects[obj_index].object_type) {
-    	case CUBE:
-    	case DIRTBLOCK: {
-    		tol = solid_tol;
-    		break;
-    	}
-    	case DIRT:
-    	case WATER:
-    	case PLANE:
-    	default: {
-    		tol = floor_tol;
-    		break;
-    	}
+	    	case WALL:
+	    	case DIRTBLOCK: {
+	    		tol = solid_tol;
+	    		break;
+	    	}
+	    	case DIRT:
+	    	case WATER:
+	    	case FLOOR:
+	    	default: {
+	    		tol = floor_tol;
+	    		break;
+	    	}
         }
 
         bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
         //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
         bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
 
-        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval) {
-            switch(map_objects[obj_index].object_type) {
-	        case CUBE: {
-	            collision_types.push_back(COLLISION_SOLID);
-	            break;
-	        }
-	        case WATER: {
-	        	collision_types.push_back(COLLISION_WATER);
-	            break;
-	        }
-	        case DIRT: {
-	        	collision_types.push_back(COLLISION_DIRT);
-	            break;
-	        }
-	        case DIRTBLOCK: {
-	        	collision_types.push_back(COLLISION_DIRTBLOCK);
-	            break;
-	        }
-	        case PLANE: {
-	        	collision_types.push_back(COLLISION_FLOOR);
-	            break;
-	        }
-	        default:
-	        	break;
-	        }
-        }
+        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
+        	objects_in_position.push_back(obj_index);
 
         obj_index++;
     }
 
-    if (collision_types.size() == 0)
-    	return COLLISION_FLOOR;
-    else
-    	return getSmallestValueInVector(collision_types);
+    return objects_in_position;
 }
 
-// Função que pega o menor valor em um vetor
-int getSmallestValueInVector(std::vector<int> vecN) {
-	int minimum = 900;
+// Retorna o elemento mais "colidor" em uma lista/vetor
+int GetMostColliderObjectInList(std::vector<int> objects_in_position) {
+	int minimum_type = 100;
+	int most_collider = -1;
 
-	for (unsigned int i = 0; i < vecN.size(); i++) {
-		if (vecN[i] < minimum)
-			minimum = vecN[i];
+	for (unsigned int i = 0; i < objects_in_position.size(); i++) {
+		if (map_objects[objects_in_position[i]].object_type < minimum_type) {
+			most_collider = objects_in_position[i];
+			minimum_type = map_objects[most_collider].object_type;
+		}
 	}
 
-	return minimum;
+	return most_collider;
 }
 
+// Retorna o elemento mais "colidor" em uma posição
+int GetMostColliderObjectInPosition(vec4 position) {
+	std::vector<int> objects_in_position = GetObjectsInPosition(position);
+	return GetMostColliderObjectInList(objects_in_position); 
+}
+
+int GetMostColliderObjectInPosition(vec3 position) {
+	vec4 new_position = vec4(position.x, position.y, position.z, 1.0f);
+	std::vector<int> objects_in_position = GetObjectsInPosition(new_position);
+	return GetMostColliderObjectInList(objects_in_position); 
+}
+
+
+// Função que calcula a posição nova do jogador (ao se movimentar)
 void CalculatePlayerPosition() {
-    vec4 target_position, target_position_xonly, target_position_zonly;
-
     if (key_w_pressed) {
-        target_position = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-        target_position_xonly = player_position + MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
-        target_position_zonly = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    	straight_sign = 1.0f;
+    	if (!key_a_pressed && !key_d_pressed)
+    		sideways_sign = 0.0f;
     }
-    if (key_s_pressed) {
-        target_position = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, player_direction[2], 0.0f);
-        target_position_xonly = player_position - MOVEMENT_AMOUNT * vec4(player_direction[0], 0.0f, 0.0f, 0.0f);
-        target_position_zonly = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction[2], 0.0f);
-        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    else if (key_s_pressed) {
+    	straight_sign = -1.0f;
+    	if (!key_a_pressed && !key_d_pressed)
+    		sideways_sign = 0.0f;
     }
+
     if (key_a_pressed) {
-        target_position = player_position - MOVEMENT_AMOUNT * camera_u_vector;
-        target_position_xonly = player_position - MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
-        target_position_zonly = player_position - MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
+    	sideways_sign = -1.0f;
+    	if (!key_s_pressed && !key_w_pressed)
+    		straight_sign = 0.0f;
     }
-    if (key_d_pressed) {
-        target_position = player_position + MOVEMENT_AMOUNT * camera_u_vector;
-        target_position_xonly = player_position + MOVEMENT_AMOUNT * vec4(camera_u_vector[0], 0.0f, 0.0f, 0.0f);
-        target_position_zonly = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, camera_u_vector[2], 0.0f);
-        UpdatePlayerPosition(target_position, target_position_xonly, target_position_zonly);
-    }
+    else if (key_d_pressed) {
+    	sideways_sign = 1.0f;
+	    if (!key_s_pressed && !key_w_pressed)
+	    	straight_sign = 0.0f;
+	}
+
+    if (key_w_pressed || key_s_pressed || key_d_pressed || key_a_pressed) {
+	    vec4 target_pos = player_position + MOVEMENT_AMOUNT * player_direction;
+	    vec4 target_pos_straight = player_position + MOVEMENT_AMOUNT * vec4(player_direction.x, 0.0f, 0.0f, 0.0f);
+	    vec4 target_pos_sideways = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction.z, 0.0f);
+
+	    int collided_object_index = GetMostColliderObjectInPosition(target_pos);
+	    int collided_object_index_straight = GetMostColliderObjectInPosition(target_pos_straight);
+	    int collided_object_index_sideways = GetMostColliderObjectInPosition(target_pos_sideways);
+
+	    int coll_type = map_objects[collided_object_index].object_type;
+	    int coll_type_straight = map_objects[collided_object_index_straight].object_type;
+	    int coll_type_sideways = map_objects[collided_object_index_sideways].object_type;
+
+	    if (coll_type == WALL) {
+	        if (!(coll_type_straight == WALL)) {
+	            coll_type = coll_type_straight;
+	            collided_object_index = collided_object_index_straight;
+	            target_pos = target_pos_straight;
+	        }
+	        else if (!(coll_type_sideways == WALL)) {
+	            coll_type = coll_type_sideways;
+	            collided_object_index = collided_object_index_sideways;
+	            target_pos = target_pos_sideways;
+	        }
+	    }
+	    
+	    switch(coll_type) {
+	    case WATER: {
+	        player_position = target_pos;
+	        death_by_water = true;
+	        break;
+	    }
+	    case DIRT: {
+	        player_position = target_pos;
+	        int target_object = collided_object_index;
+	        map_objects[target_object].object_type = FLOOR;
+	        break;
+	    }
+	    case DIRTBLOCK: {
+	    	int target_object = collided_object_index;
+	    	if (MoveBlock(target_object) == 0)
+	    		player_position = target_pos;
+	    	break;
+	    }
+	    case FLOOR: {
+	    	player_position = target_pos;
+	    	break;
+	    }
+	    default:
+	        break;
+	    }
+    
+	}
 }
 
-void UpdatePlayerPosition(vec4 target_pos, vec4 target_pos_xonly, vec4 target_pos_zonly) {
-    int collision_type = GetCollisionTypeInPosition(target_pos);
-    int collision_type_x = GetCollisionTypeInPosition(target_pos_xonly);
-    int collision_type_z = GetCollisionTypeInPosition(target_pos_zonly);
-
-    if (collision_type == COLLISION_SOLID) {
-        if (!(collision_type_x == COLLISION_SOLID)) {
-            collision_type = collision_type_x;
-            target_pos = target_pos_xonly;
-        }
-        else if (!(collision_type_x == COLLISION_SOLID)) {
-            collision_type = collision_type_z;
-            target_pos = target_pos_zonly;
-        }
-    }
-
-    switch(collision_type) {
-    case COLLISION_WATER: {
-        player_position = target_pos;
-        // death animation
-    }
-    case COLLISION_DIRT: {
-        player_position = target_pos;
-        int x = round(player_position.x);
-        int z = round(player_position.z);
-        int target_object = GetObjectIndexInCoordinate(x, z);
-        map_objects[target_object].object_type = PLANE;
-    }
-    default:
-        break;
-    }
-
-}
-
-int GetObjectIndexInCoordinate(int x, int z) {
-    for(unsigned int i = 0; i < map_objects.size(); i++) {
-        if ((map_objects[i].object_position.x == x) && (map_objects[i].object_position.z == z))
-            return i;
-    }
-    return -1;
+// Função que move um bloco
+int MoveBlock(int object_index) {
+	if (straight_sign != 0) {
+		map_objects[object_index].object_position.x += straight_sign * MOVEMENT_AMOUNT;
+		int collider_obj = GetMostColliderObjectInPosition(map_objects[object_index].object_position);
+		if (map_objects[collider_obj].object_type < FLOOR) {
+			map_objects[object_index].object_position.x -= straight_sign * MOVEMENT_AMOUNT;
+			return -1;
+		}
+	}
+	else if (sideways_sign != 0) {
+		map_objects[object_index].object_position.z += sideways_sign * MOVEMENT_AMOUNT;
+		int collider_obj = GetMostColliderObjectInPosition(map_objects[object_index].object_position);
+		if (map_objects[collider_obj].object_type < FLOOR) {
+			map_objects[object_index].object_position.z -= sideways_sign * MOVEMENT_AMOUNT;
+			return -1;
+		}
+	}
+	return 0;
 }
 
 // Função que encontra as coordenadas do spawn do jogador na planta do mapa
