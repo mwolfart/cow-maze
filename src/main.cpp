@@ -831,7 +831,6 @@ void MovePlayer() {
 	    default:
 	        break;
 	    }
-    
 	}
 }
 
@@ -857,9 +856,29 @@ void MoveBlock(int object_index) {
 		map_objects[object_index].object_position.x -= MOVEMENT_AMOUNT*2;
 	}
 
-	int collided_object = GetObjectInPosition(map_objects[object_index].object_position, false, object_index);
-	if (map_objects[collided_object].object_type < FLOOR) {
+	vec4 block_position = map_objects[object_index].object_position;
+	vec3 block_size = map_objects[object_index].object_size;
+	vec4 block_start_pos = vec4(block_position.x - block_size.x/2 + 0.01f, 
+								block_position.y - block_size.y/2, 
+								block_position.z - block_size.z/2 + 0.01f, 
+								1.0f);
+	vec4 block_end_pos = vec4(block_position.x + block_size.x/2 - 0.01f, 
+								block_position.y + block_size.y/2, 
+								block_position.z + block_size.z/2 - 0.01f, 
+								1.0f);
+
+	int collided_object_upper = GetObjectInPosition(block_start_pos, false, object_index);
+	int collided_object_lower = GetObjectInPosition(block_end_pos, false, object_index);
+
+	if (map_objects[collided_object_upper].object_type < FLOOR
+		|| map_objects[collided_object_lower].object_type < FLOOR) {
 		map_objects[object_index].object_position = old_position;
+	}
+	else if (map_objects[collided_object_upper].object_type == WATER) {
+		map_objects[object_index].object_position = map_objects[collided_object_upper].object_position;
+		
+	} else if (map_objects[collided_object_lower].object_type == WATER) {
+		map_objects[object_index].object_position = map_objects[collided_object_lower].object_position;
 	}
 }
 
