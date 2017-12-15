@@ -96,6 +96,7 @@ struct MapObject {
 
 // Estrutura que define a planta de um nível
 struct Level {
+	int babies;
     int height;
     int width;
     std::vector<std::vector<char>> plant;
@@ -179,6 +180,16 @@ std::vector<MapObject> map_objects;
 #define DIRT 		14
 #define WATER 		15
 #define LAVA 		16
+#define DOOR_RED 	17
+#define DOOR_GREEN 	18
+#define DOOR_BLUE	19
+#define DOOR_YELLOW	20
+#define BABYCOW 	21
+
+#define KEY_RED 	30
+#define KEY_GREEN 	31
+#define KEY_BLUE	32
+#define KEY_YELLOW 	33
 
 #define PLAYER_HEAD 	60
 #define PLAYER_TORSO 	61
@@ -237,6 +248,12 @@ bool key_w_pressed = false;
 bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
+
+// Inventário do jogador
+vecInt collected_keys = {0,0,0,0}; // red, green, blue, yellow
+int collected_babies = 0;
+int level_babies;
+bool endmap = false;
 
 // Variáveis de animações de mortes
 bool death_by_water = false;
@@ -330,6 +347,10 @@ int main(int argc, char* argv[])
     ComputeNormals(&cowmodel);
     BuildTrianglesAndAddToVirtualScene(&cowmodel);
 
+    ObjModel keymodel("../../data/objects/key.obj");
+    ComputeNormals(&keymodel);
+    BuildTrianglesAndAddToVirtualScene(&keymodel);
+
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -350,6 +371,7 @@ int main(int argc, char* argv[])
     // Carrega nível um
     Level level_one = LoadLevelFromFile("../../data/levels/1");
     RegisterLevelObjects(level_one);
+    level_babies = level_one.babies;
     player_position = GetPlayerSpawnCoordinates(level_one.plant);
     camera_lookat_l = player_position;
 
@@ -360,6 +382,9 @@ int main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program_id);
+
+        if(endmap)
+        	printf("endmap\n");
 
         // Movimentação do personagem
         if (death_by_water) {
@@ -497,8 +522,17 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
     float cube_vertical_shift = -0.5f;
 
+    vec3 key_size = vec3(0.1f, 0.1f, 0.1f);
+    float key_vertical_shift = -1.0f;
+
+    vec3 cow_size = vec3(0.7f, 0.7f, 0.7f);
+    float cow_vertical_shift = -0.5f;
+
+    vec3 babycow_size = vec3(0.35f, 0.35f, 0.35f);
+    float babycow_vertical_shift = -0.5f;
+
     // Tile plano
-    vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
+    vec3 tile_size = vec3(1.0f, 1.0f, 1.0f);
     float floor_shift = -1.0f;
 
     /* Adicione novos tipos de objetos abaixo */
@@ -524,6 +558,76 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     // Bloco de terra
     case 'D':{
         RegisterObjectInMap(DIRTBLOCK, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Chave vermelha
+    case 'r':{
+    	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	break;
+    }
+
+    // Chave verde
+    case 'g':{
+    	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	break;
+    }
+
+	// Chave azul
+    case 'b':{
+    	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	break;
+    }
+
+	// Chave amarela
+    case 'y':{
+    	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	break;
+    }
+
+    // Porta vermelha:
+    case 'R':{
+        RegisterObjectInMap(DOOR_RED, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Porta verde:
+    case 'G':{
+        RegisterObjectInMap(DOOR_GREEN, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Porta azul:
+    case 'A':{
+        RegisterObjectInMap(DOOR_BLUE, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Porta amarela:
+    case 'Y':{
+        RegisterObjectInMap(DOOR_YELLOW, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Vaquinha bebê:
+    case 'c':{
+        RegisterObjectInMap(BABYCOW, vec4(x, babycow_vertical_shift, z, 1.0f), babycow_size, "cow");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Vaca mãe:
+    case 'C':{
+        RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow");
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
@@ -554,7 +658,8 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
 void DrawMapObjects() {
     for(unsigned int i = 0; i < map_objects.size(); i++) {
         MapObject current_object = map_objects[i];
-        glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z);
+        glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+        					* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z);
         DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
     }
 }
@@ -683,9 +788,21 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 float GetTileToleranceValue(int object_type) {
 	switch(object_type) {
     	case WALL:
-    	case DIRTBLOCK: {
+    	case DIRTBLOCK: 
+    	case DOOR_RED:
+    	case DOOR_GREEN:
+    	case DOOR_BLUE: 
+    	case DOOR_YELLOW: {
     		return 0.25f;
     	}
+    	case KEY_RED:
+    	case KEY_BLUE:
+    	case KEY_GREEN:
+    	case KEY_YELLOW:
+    	case BABYCOW:
+    		return 0.4f;
+    	case COW:
+    		return 0.1f;
     	case DIRT:
     	case WATER:
     	case FLOOR:
@@ -760,7 +877,6 @@ bool TestCubeCollision(vec4 obj1_start_pos, vec4 obj1_end_pos, vec4 obj2_start_p
     else return false;
 }
 
-
 // Pega todos os objetos que colidem com outro objeto, dado o índice
 //  do objeto na lista de objetos do nível, e a posição à qual ele está indo
 vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) {
@@ -806,7 +922,9 @@ bool vectorHasBlockBlockingObject(vecInt vector_objects) {
 		int curr_obj_index = vector_objects[curr_index];
 		int colliding_obj_type = map_objects[curr_obj_index].object_type;
 		// Adicione novos objetos bloqueantes aqui
-		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT))
+		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT)
+			|| (colliding_obj_type == DOOR_RED) || (colliding_obj_type == DOOR_GREEN) || (colliding_obj_type == DOOR_BLUE) || (colliding_obj_type == DOOR_YELLOW)
+			|| (colliding_obj_type == COW))
 			return true;
 		curr_index++;
 	}
@@ -868,17 +986,84 @@ void MoveBlock(int block_index) {
 	}
 }
 
+// Destranca portas
+void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
+	for (unsigned int i = 0; i < red.size(); i++) {
+		collected_keys[0]--;
+		map_objects.erase(map_objects.begin() + red[i]);
+	}
+
+	for (unsigned int i = 0; i < green.size(); i++) {
+		collected_keys[1]--;
+		map_objects.erase(map_objects.begin() + green[i]);
+	}
+
+	for (unsigned int i = 0; i < blue.size(); i++) {
+		collected_keys[2]--;
+		map_objects.erase(map_objects.begin() + blue[i]);
+	}
+
+	for (unsigned int i = 0; i < yellow.size(); i++) {
+		collected_keys[3]--;
+		map_objects.erase(map_objects.begin() + yellow[i]);
+	}
+}
+
 // Testa se um vetor de objetos possui algum objeto que possa bloquear
 //  o movimento do jogador
 bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
 	unsigned int curr_index = 0;
 	bool found_dirtblocks = false;
+	vecInt unlocked_red_doors;
+	vecInt unlocked_green_doors;
+	vecInt unlocked_blue_doors;
+	vecInt unlocked_yellow_doors;
 
 	// Primeiro verificamos se existem paredes
 	while (curr_index < vector_objects.size()) {
 		int curr_obj_index = vector_objects[curr_index];
 		if (map_objects[curr_obj_index].object_type == WALL)
 			return true;
+		curr_index++;
+	}
+
+	// Depois verificamos portas
+	curr_index = 0;
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+
+		if (map_objects[curr_obj_index].object_type == DOOR_RED)
+			if (collected_keys[0] == 0)
+				return true;
+			else unlocked_red_doors.push_back(curr_obj_index);
+		else if (map_objects[curr_obj_index].object_type == DOOR_GREEN)
+			if (collected_keys[1] == 0)
+				return true;
+			else unlocked_green_doors.push_back(curr_obj_index);
+		else if (map_objects[curr_obj_index].object_type == DOOR_BLUE)
+			if (collected_keys[2] == 0)
+				return true;
+			else unlocked_blue_doors.push_back(curr_obj_index);
+		else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW)
+			if (collected_keys[3] == 0)
+				return true;
+			else unlocked_yellow_doors.push_back(curr_obj_index);
+
+		curr_index++;
+	}
+
+	// Depois verificamos se atingiu a vaca do final do jogo
+	curr_index = 0;
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+		if (map_objects[curr_obj_index].object_type == COW) {
+			if (collected_babies == level_babies) {
+				endmap = true;
+				return false;
+			} else
+				return true;
+		}
+
 		curr_index++;
 	}
 
@@ -896,7 +1081,10 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
 	// Se existem blocos, o player não pode ser movimentado (embora a chamada para mover os blocos tenha ocorrido)
 	if (found_dirtblocks)
 		return true;
-	else return false;
+	else {
+		UnlockDoors(unlocked_red_doors, unlocked_green_doors, unlocked_blue_doors, unlocked_yellow_doors);
+		return false;
+	}
 }
 
 // Função que calcula a posição nova do jogador (ao se movimentar)
@@ -961,11 +1149,31 @@ void MovePlayer() {
 		    player_position = target_pos;
 
 		    int collided_dirt_index = GetVectorObjectType(collided_objects, DIRT);
+		    int collided_redkey_index = GetVectorObjectType(collided_objects, KEY_RED);
+		    int collided_greenkey_index = GetVectorObjectType(collided_objects, KEY_GREEN);
+		    int collided_bluekey_index = GetVectorObjectType(collided_objects, KEY_BLUE);
+		    int collided_yellowkey_index = GetVectorObjectType(collided_objects, KEY_YELLOW);
+		    int collided_baby_index = GetVectorObjectType(collided_objects, BABYCOW);
 
 		    if (GetVectorObjectType(collided_objects, WATER) >= 0) {
 		        death_by_water = true;
 		    } else if (collided_dirt_index >= 0) {
 		        map_objects[collided_dirt_index].object_type = FLOOR;
+		    } else if (collided_redkey_index >= 0) {
+		    	map_objects.erase(map_objects.begin() + collided_redkey_index);
+		    	collected_keys[0]++;
+		    } else if (collided_greenkey_index >= 0) {
+		    	map_objects.erase(map_objects.begin() + collided_greenkey_index);
+		    	collected_keys[1]++;
+		    } else if (collided_bluekey_index >= 0) {
+		    	map_objects.erase(map_objects.begin() + collided_bluekey_index);
+		    	collected_keys[2]++;
+		    } else if (collided_yellowkey_index >= 0) {
+		    	map_objects.erase(map_objects.begin() + collided_yellowkey_index);
+		    	collected_keys[3]++;
+		    } else if (collided_baby_index >= 0) {
+		    	map_objects.erase(map_objects.begin() + collided_baby_index);
+		    	collected_babies++;
 		    }
 		}
 	}
@@ -1220,9 +1428,11 @@ Level LoadLevelFromFile(const char* filepath) {
     else {
         try {
             // Salva largura e altura na estrutura do nível.
-            string width, height;
+            string width, height, babies;
+            getline(level_file, babies);
             getline(level_file, width);
             getline(level_file, height);
+            loaded_level.babies = atoi(babies.c_str());
             loaded_level.width = atoi(width.c_str());
             loaded_level.height = atoi(height.c_str());
 
