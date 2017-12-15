@@ -43,6 +43,7 @@
 typedef glm::vec3 vec3;
 typedef glm::vec4 vec4;
 typedef std::string string;
+typedef std::vector<int> vecInt;
 
 ////////////////
 // ESTRUTURAS //
@@ -124,11 +125,8 @@ void DrawMapObjects();
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name);
-int GetObjectInPosition(vec4 position, bool testing_player, int index_of_object);
-int GetDensestObjectInVector(std::vector<int> object_id_list);
 float GetTileToleranceValue(int object_type);
 void MovePlayer();
-void MoveBlock(int object_index);
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 void PrintGPUInfoInTerminal();
@@ -458,6 +456,23 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+// Converte um vetor para coordenadas homogêneas
+vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
+	if (isVectorPosVector)
+		return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 1.0f);
+	else return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 0.0f);
+}
+
+// Dado um objeto, retorna as coordenadas onde ele "começa"
+vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
+	return object_position - VectorSetHomogeneous(object_size, false) / 2.0f;
+}
+
+// Dado um objeto, retorna as coordenadas onde ele "termina"
+vec4 GetObjectBottomBoundary(vec4 object_position, vec3 object_size) {
+	return object_position + VectorSetHomogeneous(object_size, false) / 2.0f;
+}
+
 // Função que registra os objetos do nível com base na sua planta
 void RegisterLevelObjects(Level level) {
     float center_x = (level.width-1)/2.0f;
@@ -663,73 +678,6 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
-/*
-   ALERTA DE GAMBIARRA
-   Eu não soube como representar/me refeir à isso, mas existe
-   uma prioridade de colisão nos objetos. Por exemplo, se o player
-   colide com sujeira e com sólido ao mesmo tempo, o sólido
-   tem prioridade.
-   Eu defini isso como "densidade". A interseção mais comum que acontece
-   é a de piso + cubo de sujeira (um cubo de sujeira está sob um piso).
-   Então, sempre que eu escrever "mais denso" estou me referindo ao
-   objeto de menor ID (definido nos DEFINES lá em cima)
- */
-
-// Função que retorna o objeto presente em dada posição
-// Em caso de empate, retorna o mais "denso" (com id de menor valor)
-int GetObjectInPosition(vec4 position, bool testing_player, int index_of_object) {
-    unsigned int obj_index = 0;
-    // Primeiro, salva uma lista de objetos presentes na posição
-    std::vector<int> objects_in_position;
-
-    while(obj_index < map_objects.size()) {
-    	if (!testing_player && (obj_index == index_of_object)) {
-    		obj_index++;
-    		continue;
-    	}
-
-        vec4 obj_position = map_objects[obj_index].object_position;
-        vec3 obj_size = map_objects[obj_index].object_size;
-
-        // Computa dimensões e limites do objeto
-        vec4 obj_size_vector = vec4(obj_size.x, obj_size.y, obj_size.z, 0.0f);
-        vec4 obj_start = obj_position - obj_size_vector / 2.0f;
-        vec4 obj_end = obj_position + obj_size_vector / 2.0f;
-        
-        float tol;
-        if (testing_player)
-        	tol = GetTileToleranceValue(map_objects[obj_index].object_type);
-        else tol = 0.0f;
-
-        bool is_x_in_collision_interval = (position.x <= obj_end.x + tol && position.x >= obj_start.x - tol);
-        //bool is_y_in_collision_interval = (position.y <= obj_end.y && position.y >= obj_start.y);
-        bool is_z_in_collision_interval = (position.z <= obj_end.z + tol && position.z >= obj_start.z - tol);
-
-        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
-        	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
-
-        obj_index++;
-    }
-
-    // Retorna apenas o objeto mais denso dentre os colididos.
-    return GetDensestObjectInVector(objects_in_position);
-}
-
-// Retorna o elemento mais "denso" em uma lista/vetor
-int GetDensestObjectInVector(std::vector<int> object_id_vec) {
-	int minimum_type = 100; // Inicializa a densidade bem fraca
-	int most_dense = -1; // Mais denso não existe ainda
-
-	for (unsigned int i = 0; i < object_id_vec.size(); i++) {
-		if (map_objects[object_id_vec[i]].object_type < minimum_type) {
-			most_dense = object_id_vec[i]; // Atualiza mais denso
-			minimum_type = map_objects[most_dense].object_type;
-		}
-	}
-
-	return most_dense;
-}
-
 // Dado um tipo de objeto, retorna o valor de tolerância
 // Usado para a função de colisão
 float GetTileToleranceValue(int object_type) {
@@ -742,9 +690,213 @@ float GetTileToleranceValue(int object_type) {
     	case WATER:
     	case FLOOR:
     	default: {
-    		return 0.1f;
+    		return -0.1f;
     	}
     }
+}
+
+// Pega todos os objetos colidindo com o jogador, dado sua posição
+vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
+    unsigned int obj_index = 0;
+    vecInt objects_in_position;
+
+    // Varre todos os objetos registrados no mapa
+    while (obj_index < map_objects.size()) {
+        vec4 obj_position = map_objects[obj_index].object_position;
+        vec3 obj_size = map_objects[obj_index].object_size;
+
+        // Computa dimensões e limites do objeto
+        vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
+        vec4 obj_end = GetObjectBottomBoundary(obj_position, obj_size);
+        
+        // Computa valor de tolerância (quanto o player pode andar "dentro" do objeto, ou quanto ele deve ficar longe)
+        float tol = GetTileToleranceValue(map_objects[obj_index].object_type);
+
+        bool is_x_in_collision_interval = (player_position.x <= obj_end.x + tol && player_position.x >= obj_start.x - tol);
+        //bool is_y_in_collision_interval = (player_position.y <= obj_end.y && player_position.y >= obj_start.y);
+        bool is_z_in_collision_interval = (player_position.z <= obj_end.z + tol && player_position.z >= obj_start.z - tol);
+
+        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
+        	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
+
+        obj_index++;
+    }
+
+    return objects_in_position;
+}
+
+// Dado os limites de dois objetos (os dois cantos), verifica se os dois colidem ou não
+bool TestCubeCollision(vec4 obj1_start_pos, vec4 obj1_end_pos, vec4 obj2_start_pos, vec4 obj2_end_pos) {
+	// Para o primeiro objeto, computa os 8 pontos ao redor dele (ignora-se o y por enquanto, pois todos os objetos estão no mesmo plano),
+	//  e verifica-se se cada um desses 8 pontos está nos limites do outro objeto
+	vec4 obj1_corner1 = obj1_start_pos;
+	vec4 obj1_corner2 = vec4(obj1_start_pos.x, 0.0f, obj1_end_pos.z, 1.0f);
+	vec4 obj1_corner3 = vec4(obj1_end_pos.x, 0.0f, obj1_start_pos.z, 1.0f);
+	vec4 obj1_corner4 = obj1_end_pos;
+	vec4 obj1_side1 = vec4(obj1_corner1.x + (obj1_corner3.x - obj1_corner1.x)/2.0f, 0.0f, obj1_corner1.z, 1.0f);
+	vec4 obj1_side2 = vec4(obj1_corner1.x, 0.0f, obj1_corner1.z + (obj1_corner2.z - obj1_corner1.z)/2.0f, 1.0f);
+	vec4 obj1_side3 = vec4(obj1_corner2.x + (obj1_corner4.x - obj1_corner2.x)/2.0f, 0.0f, obj1_corner2.z, 1.0f);
+	vec4 obj1_side4 = vec4(obj1_corner3.x, 0.0f, obj1_corner3.z + (obj1_corner4.z - obj1_corner3.z)/2.0f, 1.0f);
+
+	bool is_x_in_collision_interval = ((obj1_corner1.x < obj2_end_pos.x && obj1_corner1.x > obj2_start_pos.x)
+										|| (obj1_corner2.x < obj2_end_pos.x && obj1_corner2.x > obj2_start_pos.x)
+										|| (obj1_corner3.x < obj2_end_pos.x && obj1_corner3.x > obj2_start_pos.x)
+										|| (obj1_corner4.x < obj2_end_pos.x && obj1_corner4.x > obj2_start_pos.x)
+										|| (obj1_side1.x < obj2_end_pos.x && obj1_side1.x > obj2_start_pos.x)
+										|| (obj1_side2.x < obj2_end_pos.x && obj1_side2.x > obj2_start_pos.x)
+										|| (obj1_side3.x < obj2_end_pos.x && obj1_side3.x > obj2_start_pos.x)
+										|| (obj1_side4.x < obj2_end_pos.x && obj1_side4.x > obj2_start_pos.x));
+    bool is_z_in_collision_interval = ((obj1_corner1.z < obj2_end_pos.z && obj1_corner1.z > obj2_start_pos.z)
+										|| (obj1_corner2.z < obj2_end_pos.z && obj1_corner2.z > obj2_start_pos.z)
+										|| (obj1_corner3.z < obj2_end_pos.z && obj1_corner3.z > obj2_start_pos.z)
+										|| (obj1_corner4.z < obj2_end_pos.z && obj1_corner4.z > obj2_start_pos.z)
+										|| (obj1_side1.z < obj2_end_pos.z && obj1_side1.z > obj2_start_pos.z)
+										|| (obj1_side2.z < obj2_end_pos.z && obj1_side2.z > obj2_start_pos.z)
+										|| (obj1_side3.z < obj2_end_pos.z && obj1_side3.z > obj2_start_pos.z)
+										|| (obj1_side4.z < obj2_end_pos.z && obj1_side4.z > obj2_start_pos.z));
+
+    if (is_x_in_collision_interval && is_z_in_collision_interval)
+    	return true;
+    else return false;
+}
+
+
+// Pega todos os objetos que colidem com outro objeto, dado o índice
+//  do objeto na lista de objetos do nível, e a posição à qual ele está indo
+vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) {
+    unsigned int obj_index = 0;
+    vecInt objects_in_position;
+
+    // Computa dimensões e limites do objeto a ser testado
+    vec3 target_obj_size = map_objects[target_obj_index].object_size;
+    vec4 target_obj_start = GetObjectTopBoundary(target_obj_pos, target_obj_size);
+    vec4 target_obj_end = GetObjectBottomBoundary(target_obj_pos, target_obj_size);
+
+    // Varre todos os objetos do nível
+    while (obj_index < map_objects.size()) {
+    	// O próprio objeto está na lista e deve ser ignorado
+    	if (obj_index == target_obj_index) {
+    		obj_index++;
+    		continue;
+    	}
+
+        vec4 obj_position = map_objects[obj_index].object_position;
+        vec3 obj_size = map_objects[obj_index].object_size;
+
+        // Computa dimensões e limites do objeto atual
+        vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
+        vec4 obj_end = GetObjectBottomBoundary(obj_position, obj_size);
+
+        if (TestCubeCollision(target_obj_start, target_obj_end, obj_start, obj_end))
+        	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
+
+        obj_index++;
+    }
+
+    return objects_in_position;
+}
+
+// Dado um vetor, testa se existe um objeto que possa bloquear
+//  o movimento de outro objeto (cubo de sujeira)
+bool vectorHasBlockBlockingObject(vecInt vector_objects) {
+	unsigned int curr_index = 0;
+	vecInt movable_blocks;
+
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+		int colliding_obj_type = map_objects[curr_obj_index].object_type;
+		// Adicione novos objetos bloqueantes aqui
+		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT))
+			return true;
+		curr_index++;
+	}
+
+	return false;
+}
+
+// Dado um vetor de objetos, retorna o primeiro objeto de um dado tipo
+int GetVectorObjectType(vecInt vector_objects, int type) {
+	unsigned int curr_index = 0;
+
+	while(curr_index < vector_objects.size()) {
+		int current_obj_index = vector_objects[curr_index];
+
+		if (map_objects[current_obj_index].object_type == type)
+			return current_obj_index;
+		curr_index++;
+	}
+
+	return -1;
+}
+
+
+// Função que move um bloco
+// Ao mover o bloco, testa-se colisão também.
+void MoveBlock(int block_index) {
+	vec4 direction = map_objects[block_index].object_position - player_position;
+	direction.y = 0.0f;
+
+	float angle = acos(dotproduct(direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(direction));
+	if (direction.z > 0.0f)
+		angle = - angle;
+	angle = angle + PI;
+
+	vec4 target_pos = map_objects[block_index].object_position;
+
+	if (angle >= PI/4 && angle < 3*PI/4) {
+		target_pos.z += MOVEMENT_AMOUNT;
+	} else if (angle >= 3*PI/4 && angle < 5*PI/4) {
+		target_pos.x += MOVEMENT_AMOUNT;
+	} else if (angle >= 5*PI/4 && angle < 7*PI/4) {
+		target_pos.z -= MOVEMENT_AMOUNT;
+	} else {
+		target_pos.x -= MOVEMENT_AMOUNT;
+	}
+
+	vecInt collided_objects = GetObjectsCollidingWithObject(block_index, target_pos);
+
+	if (!vectorHasBlockBlockingObject(collided_objects)) {
+		map_objects[block_index].object_position = target_pos;
+
+		// Testa se atingiu água. Se atingiu, transforma-a em sujeira.
+		int water_index = GetVectorObjectType(collided_objects, WATER);
+		if (water_index >= 0) {
+		    map_objects[block_index].object_position = map_objects[water_index].object_position;
+		    map_objects[water_index].object_type = DIRT;
+		    map_objects.erase(map_objects.begin() + block_index);
+	    }
+	}
+}
+
+// Testa se um vetor de objetos possui algum objeto que possa bloquear
+//  o movimento do jogador
+bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
+	unsigned int curr_index = 0;
+	bool found_dirtblocks = false;
+
+	// Primeiro verificamos se existem paredes
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+		if (map_objects[curr_obj_index].object_type == WALL)
+			return true;
+		curr_index++;
+	}
+
+	// Depois verificamos se existem blocos que podem ser movimentados
+	curr_index = 0;
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+		if (map_objects[curr_obj_index].object_type == DIRTBLOCK) {
+			MoveBlock(curr_obj_index);
+			found_dirtblocks = true;
+		}
+		curr_index++;
+	}
+
+	// Se existem blocos, o player não pode ser movimentado (embora a chamada para mover os blocos tenha ocorrido)
+	if (found_dirtblocks)
+		return true;
+	else return false;
 }
 
 // Função que calcula a posição nova do jogador (ao se movimentar)
@@ -787,98 +939,35 @@ void MovePlayer() {
 
     	// Primeiro testamos se existe uma colisão com sólidos na direção direta do player.
 	    vec4 target_pos = player_position + MOVEMENT_AMOUNT * player_direction;
-	    int collided_object_index = GetObjectInPosition(target_pos, true, 0);
-	    int coll_type = map_objects[collided_object_index].object_type;
+	    vecInt collided_objects = GetObjectsCollidingWithPlayer(target_pos);
+	    bool position_blocked = vectorHasPlayerBlockingObject(collided_objects);
 
-	    if (coll_type == WALL) {
+	    if (position_blocked) {
 	    	// Caso exista, vamos testar na posição reta.
 	    	target_pos = player_position + MOVEMENT_AMOUNT * vec4(player_direction.x, 0.0f, 0.0f, 0.0f);
-	    	collided_object_index = GetObjectInPosition(target_pos, true, 0);
-	    	coll_type = map_objects[collided_object_index].object_type;
+	    	collided_objects = GetObjectsCollidingWithPlayer(target_pos);
+	    	position_blocked = vectorHasPlayerBlockingObject(collided_objects);
 
-	    	if (coll_type == WALL) {
+	    	if (position_blocked) {
 	    		// Caso exista, finalmente, testamos a posição lateral.
 	    		target_pos = player_position + MOVEMENT_AMOUNT * vec4(0.0f, 0.0f, player_direction.z, 0.0f);
-	    		collided_object_index = GetObjectInPosition(target_pos, true, 0);
-	    		coll_type = map_objects[collided_object_index].object_type;
-
-	    		// Se nenhuma delas está livre, o player ficará preso.
+	    		collided_objects = GetObjectsCollidingWithPlayer(target_pos);
+	    		position_blocked = vectorHasPlayerBlockingObject(collided_objects);
 	    	}
 	    }
-	    
-	    // Testa-se o tipo de colisão.
-	    switch(coll_type) {
-	    case WATER: {
-	        player_position = target_pos;
-	        death_by_water = true;
-	        break;
-	    }
-	    case DIRT: {
-	        player_position = target_pos;
-	        int target_object = collided_object_index;
-	        map_objects[target_object].object_type = FLOOR;
-	        break;
-	    }
-	    case DIRTBLOCK: {
-	    	int target_object = collided_object_index;
-	    	MoveBlock(target_object);
-	    	break;
-	    }
-	    case FLOOR: {
-	    	player_position = target_pos;
-	    	break;
-	    }
-	    default:
-	        break;
-	    }
-	}
-}
 
-// Função que move um bloco
-void MoveBlock(int object_index) {
-	vec4 direction = map_objects[object_index].object_position - player_position;
-	direction.y = 0.0f;
+	    // Se nenhuma delas está livre, o player ficará preso.
+	    if (!position_blocked) {
+		    player_position = target_pos;
 
-	float angle = acos(dotproduct(direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(direction));
-	if (direction.z > 0.0f)
-		angle = - angle;
-	angle = angle + PI;
+		    int collided_dirt_index = GetVectorObjectType(collided_objects, DIRT);
 
-	vec4 old_position = map_objects[object_index].object_position;
-
-	if (angle >= PI/4 && angle < 3*PI/4) {
-		map_objects[object_index].object_position.z += MOVEMENT_AMOUNT*2;
-	} else if (angle >= 3*PI/4 && angle < 5*PI/4) {
-		map_objects[object_index].object_position.x += MOVEMENT_AMOUNT*2;
-	} else if (angle >= 5*PI/4 && angle < 7*PI/4) {
-		map_objects[object_index].object_position.z -= MOVEMENT_AMOUNT*2;
-	} else {
-		map_objects[object_index].object_position.x -= MOVEMENT_AMOUNT*2;
-	}
-
-	vec4 block_position = map_objects[object_index].object_position;
-	vec3 block_size = map_objects[object_index].object_size;
-	vec4 block_start_pos = vec4(block_position.x - block_size.x/2 + 0.01f, 
-								block_position.y - block_size.y/2, 
-								block_position.z - block_size.z/2 + 0.01f, 
-								1.0f);
-	vec4 block_end_pos = vec4(block_position.x + block_size.x/2 - 0.01f, 
-								block_position.y + block_size.y/2, 
-								block_position.z + block_size.z/2 - 0.01f, 
-								1.0f);
-
-	int collided_object_upper = GetObjectInPosition(block_start_pos, false, object_index);
-	int collided_object_lower = GetObjectInPosition(block_end_pos, false, object_index);
-
-	if (map_objects[collided_object_upper].object_type < FLOOR
-		|| map_objects[collided_object_lower].object_type < FLOOR) {
-		map_objects[object_index].object_position = old_position;
-	}
-	else if (map_objects[collided_object_upper].object_type == WATER) {
-		map_objects[object_index].object_position = map_objects[collided_object_upper].object_position;
-		
-	} else if (map_objects[collided_object_lower].object_type == WATER) {
-		map_objects[object_index].object_position = map_objects[collided_object_lower].object_position;
+		    if (GetVectorObjectType(collided_objects, WATER) >= 0) {
+		        death_by_water = true;
+		    } else if (collided_dirt_index >= 0) {
+		        map_objects[collided_dirt_index].object_type = FLOOR;
+		    }
+		}
 	}
 }
 
@@ -935,7 +1024,7 @@ void ComputeNormals(ObjModel* model) {
 
     size_t num_vertices = model->attrib.vertices.size() / 3;
 
-    std::vector<int> num_triangles_per_vertex(num_vertices, 0);
+    vecInt num_triangles_per_vertex(num_vertices, 0);
     std::vector<vec4> vertex_normals(num_vertices, vec4(0.0f,0.0f,0.0f,0.0f));
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
