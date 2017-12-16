@@ -102,6 +102,15 @@ struct Level {
     std::vector<std::vector<char>> plant;
 };
 
+// CPU representation of a particle
+struct Particle{
+	vec4 position;
+	float speed;
+	vec3 color;
+	float size;
+	float life; // Remaining life of the particle. if < 0 : dead and unused.
+};
+
 ///////////////////////////
 // DECLARAÇÃO DE FUNÇÕES //
 ///////////////////////////
@@ -128,9 +137,11 @@ void RegisterObjectInMapVector(char tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name);
 float GetTileToleranceValue(int object_type);
 void MovePlayer();
+void AnimateParticles();
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 void PrintGPUInfoInTerminal();
+void ShowInventory(GLFWwindow* window);
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
@@ -179,7 +190,7 @@ std::vector<MapObject> map_objects;
 #define FLOOR 		13
 #define DIRT 		14
 #define WATER 		15
-#define LAVA 		16
+#define FIRE 		16
 #define DOOR_RED 	17
 #define DOOR_GREEN 	18
 #define DOOR_BLUE	19
@@ -197,6 +208,8 @@ std::vector<MapObject> map_objects;
 #define PLAYER_HAND 	63
 #define PLAYER_LEG 		64
 #define PLAYER_FOOT 	65
+
+#define PARTICLE 	80
 
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
@@ -249,6 +262,12 @@ bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
 
+// Angulos de rotação dos itens
+float item_angle_y = 0;
+
+// Particulas
+std::vector<Particle> particles;
+
 // Inventário do jogador
 vecInt collected_keys = {0,0,0,0}; // red, green, blue, yellow
 int collected_babies = 0;
@@ -270,6 +289,7 @@ GLint object_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 GLint anim_timer_uniform;
+GLint yellow_particle_color_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -325,6 +345,7 @@ int main(int argc, char* argv[])
     int curr_anim_tile = 0;
     int anim_timer = 0;
     #define ANIMATION_SPEED 10
+    #define ITEM_ROTATION_SPEED 0.1
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -367,6 +388,9 @@ int main(int argc, char* argv[])
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+
+    glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Carrega nível um
     Level level_one = LoadLevelFromFile("../../data/levels/1");
@@ -463,6 +487,17 @@ int main(int argc, char* argv[])
         }
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
+		// Rotação dos itens
+		item_angle_y += ITEM_ROTATION_SPEED;
+		if (item_angle_y >= 2*PI)
+			item_angle_y = 0;
+
+		// Fogo: partículas
+		AnimateParticles();
+
+		// Mostra itens na tela
+		ShowInventory(window);
+
         if (g_ShowInfoText) {
             TextRendering_ShowEulerAngles(window);
             TextRendering_ShowProjection(window);
@@ -496,6 +531,69 @@ vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
 // Dado um objeto, retorna as coordenadas onde ele "termina"
 vec4 GetObjectBottomBoundary(vec4 object_position, vec3 object_size) {
 	return object_position + VectorSetHomogeneous(object_size, false) / 2.0f;
+}
+
+void ShowInventory(GLFWwindow* window) {
+	float pad = TextRendering_LineHeight(window);
+
+	string invstring = "REQUIRED COWS: " + std::to_string(level_babies - collected_babies) + " KEYS: ";
+	if (collected_keys[0]) invstring += "R ";
+	else invstring += "  ";
+	if (collected_keys[1]) invstring += "G ";
+	else invstring += "  ";
+	if (collected_keys[2]) invstring += "B ";
+	else invstring += "  ";
+	if (collected_keys[3]) invstring += "Y";
+	else invstring += " ";
+
+    TextRendering_PrintString(window, invstring, -1.0f+pad/5, 1.0f-pad, 1.0f);
+}
+
+void AnimateParticles() {
+	vecInt particles_to_delete;
+
+	for(unsigned int i = 0; i < particles.size(); i++) {
+		particles[i].position.y = particles[i].position.y + particles[i].speed;
+		particles[i].life =  particles[i].life - particles[i].speed;
+		if (particles[i].life <= 0)
+			particles_to_delete.push_back(i);
+	}
+
+	for(unsigned int i = 0; i < particles_to_delete.size(); i++) {
+		particles.erase(particles.begin() + particles_to_delete[i]);
+	}
+}
+
+void GenerateParticles(int amount, vec4 position, vec3 object_size) {
+	for (int i = 0; i < amount; i++) {
+		Particle new_particle;
+		float x_start = position.x - object_size.x / 2;
+		float x_end = position.x + object_size.x / 2;
+		float z_start = position.z - object_size.z / 2;
+		float z_end = position.z + object_size.z / 2;
+		float pos_x = x_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(x_end-x_start)));
+		float pos_z = z_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(z_end-z_start)));
+		float pos_y = position.y;
+		float yellow = 0.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.6-0.0)));
+		new_particle.position = vec4(pos_x, pos_y, pos_z, 1.0f);
+		new_particle.speed = 0.02f;
+		new_particle.color = vec3(1.0f, yellow, 0.0f);
+		new_particle.life = 1.0f;
+		new_particle.size = 0.01f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.05f-0.01f)));
+		particles.push_back(new_particle);
+	}
+}
+
+void DrawParticles() {
+	glDisable(GL_CULL_FACE);
+	for(unsigned int i = 0; i < particles.size(); i++) {
+		glUniform1i(yellow_particle_color_uniform, particles[i].color.y * 10);
+
+		glm::mat4 model = Matrix_Translate(particles[i].position.x, particles[i].position.y, particles[i].position.z)
+        				* Matrix_Scale(particles[i].size, particles[i].size, particles[i].size);
+
+        DrawVirtualObject("sphere", PARTICLE, model);
+	}
 }
 
 // Função que registra os objetos do nível com base na sua planta
@@ -546,6 +644,13 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     // Água
     case 'W':{
         RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        break;
+    }
+
+    // Porta vermelha:
+    case 'f':{
+        RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
         break;
     }
 
@@ -658,8 +763,30 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
 void DrawMapObjects() {
     for(unsigned int i = 0; i < map_objects.size(); i++) {
         MapObject current_object = map_objects[i];
-        glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        					* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z);
+        glm::mat4 model;
+        int obj_type = current_object.object_type;
+
+        if ((obj_type == KEY_RED) || (obj_type == KEY_GREEN) || (obj_type == KEY_BLUE) || (obj_type == KEY_YELLOW)) {
+        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z)
+        		* Matrix_Translate(0.0f, 5.7f, 0.0f)
+        		* Matrix_Rotate_Y(item_angle_y)
+        		* Matrix_Rotate_Z(PI/5)
+        		* Matrix_Translate(0.0f, -5.7f, 0.0f);
+        } else if (obj_type == BABYCOW) {
+    		model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z)
+        		* Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        		* Matrix_Rotate_Y(item_angle_y)
+        		* Matrix_Translate(0.2f, 0.0f, 0.0f);
+        } else if (obj_type == FIRE) {
+        	GenerateParticles(5, current_object.object_position, current_object.object_size);
+        	DrawParticles();
+   		} else {
+        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z);
+        }
+        
         DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
     }
 }
@@ -1545,6 +1672,7 @@ void LoadShadersFromFiles() {
     bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
     bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
     anim_timer_uniform      = glGetUniformLocation(program_id, "anim_timer");
+    yellow_particle_color_uniform = glGetUniformLocation(program_id, "yellow_particle_color");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(program_id);
@@ -1754,8 +1882,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = PI/2;
-        float phimin = -phimax;
+        float phimax = PI/2 - 0.2f;
+        float phimin = 0;
 
         if (g_CameraPhi >= phimax)
             g_CameraPhi = phimax - 0.01f;

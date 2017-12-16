@@ -45,6 +45,8 @@ uniform mat4 projection;
 #define PLAYER_LEG      64
 #define PLAYER_FOOT     65
 
+#define PARTICLE    80
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -65,12 +67,24 @@ uniform sampler2D TextureImage8;
 // Variável de controle da animação
 uniform int anim_timer;
 
+uniform int yellow_particle_color;
+
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
-out vec3 color;
+out vec4 color;
 
 // Constantes
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
+
+highp float rand(vec2 co)
+{
+    highp float a = 12.9898;
+    highp float b = 78.233;
+    highp float c = 43758.5453;
+    highp float dt= dot(co.xy ,vec2(a,b));
+    highp float sn= mod(dt,3.14);
+    return fract(sin(sn) * c);
+}
 
 void main()
 {
@@ -111,13 +125,13 @@ void main()
     vec4 light = normalize(vec4(16.0,10.0,16.0,0.0));
 
     // Parâmetros que definem as propriedades espectrais da superfície
-    vec3 Kd; // Refletância difusa
-    vec3 Ks; // Refletância especular
-    vec3 Ka; // Refletância ambiente
+    vec4 Kd; // Refletância difusa
+    vec4 Ks; // Refletância especular
+    vec4 Ka; // Refletância ambiente
     float q; // Expoente especular para o modelo de iluminação de Phong
 
-    vec3 I = vec3(1.0,1.0,1.0);
-    vec3 Ia = vec3(0.5,0.5,0.5);
+    vec4 I = vec4(1.0,1.0,1.0,1.0f);
+    vec4 Ia = vec4(0.5,0.5,0.5,1.0f);
 
     if ( object_id == COW )
     {
@@ -133,7 +147,7 @@ void main()
         U = (position_model[0] - minx)/(maxx - minx);
         V = (position_model[1] - miny)/(maxy - miny);
 
-        Kd = texture(TextureImage2, vec2(U,V)).rgb;
+        Kd = texture(TextureImage2, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == FLOOR )
@@ -143,13 +157,13 @@ void main()
         U = mod(texcoords.x, period)*number_of_repetitions;
         V = mod(texcoords.y, period)*number_of_repetitions;
 
-        Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd * (lambert + 0.01);
         */
         U = texcoords.x;
         V = texcoords.y;
 
-        Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == WATER )
@@ -158,10 +172,10 @@ void main()
         V = texcoords.y;
 
         switch (anim_timer) {
-        case 0: { Kd = texture(TextureImage3, vec2(U,V)).rgb; break; }
-        case 1: { Kd = texture(TextureImage4, vec2(U,V)).rgb; break; }
-        case 2: { Kd = texture(TextureImage5, vec2(U,V)).rgb; break; }
-        case 3: { Kd = texture(TextureImage6, vec2(U,V)).rgb; break; }
+        case 0: { Kd = texture(TextureImage3, vec2(U,V)).rgba; break; }
+        case 1: { Kd = texture(TextureImage4, vec2(U,V)).rgba; break; }
+        case 2: { Kd = texture(TextureImage5, vec2(U,V)).rgba; break; }
+        case 3: { Kd = texture(TextureImage6, vec2(U,V)).rgba; break; }
         }
 
         color = Kd;
@@ -171,7 +185,7 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
 
-        Kd = texture(TextureImage1, vec2(U,V)).rgb;
+        Kd = texture(TextureImage1, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DIRT )
@@ -179,7 +193,7 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
 
-        Kd = texture(TextureImage7, vec2(U,V)).rgb;
+        Kd = texture(TextureImage7, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DIRTBLOCK )
@@ -187,84 +201,86 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
 
-        Kd = texture(TextureImage8, vec2(U,V)).rgb;
+        Kd = texture(TextureImage8, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DOOR_RED ) {
-        color = vec3(1.0f, 0.0f, 0.0f);
+        color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
     } else if ( object_id == DOOR_GREEN ) {
-        color = vec3(0.0f, 1.0f, 0.0f);
+        color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
     } else if ( object_id == DOOR_BLUE ) {
-        color = vec3(0.0f, 0.0f, 1.0f);
+        color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
     } else if ( object_id == DOOR_YELLOW ) {
-        color = vec3(1.0f, 1.0f, 0.0f);
+        color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
     }
     else if ( object_id == KEY_RED ) {
-        Kd = vec3(0.8f, 0.0f, 0.0f);
-        Ks = vec3(0.5,0.5,0.5);
-        Ka = vec3(0.4f, 0.0f, 0.0f);
+        Kd = vec4(0.8f, 0.0f, 0.0f, 1.0f);
+        Ks = vec4(0.5,0.5,0.5, 1.0f);
+        Ka = vec4(0.4f, 0.0f, 0.0f, 1.0f);
         q = 64.0;
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == KEY_GREEN ) {
-        Kd = vec3(0.0f, 0.8f, 0.0f);
-        Ks = vec3(0.5,0.5,0.5);
-        Ka = vec3(0.0f, 0.4f, 0.0f);
+        Kd = vec4(0.0f, 0.8f, 0.0f, 1.0f);
+        Ks = vec4(0.5,0.5,0.5, 1.0f);
+        Ka = vec4(0.0f, 0.4f, 0.0f, 1.0f);
         q = 64.0;
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == KEY_BLUE ) {
-        Kd = vec3(0.0f, 0.0f, 0.8f);
-        Ks = vec3(0.5,0.5,0.5);
-        Ka = vec3(0.0f, 0.0f, 0.4f);
+        Kd = vec4(0.0f, 0.0f, 0.8f, 1.0f);
+        Ks = vec4(0.5,0.5,0.5, 1.0f);
+        Ka = vec4(0.0f, 0.0f, 0.4f, 1.0f);
         q = 64.0;
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == KEY_YELLOW ) {
-        Kd = vec3(0.8f, 0.8f, 0.0f);
-        Ks = vec3(0.5,0.5,0.5);
-        Ka = vec3(0.4f, 0.2f, 0.0f);
+        Kd = vec4(0.8f, 0.8f, 0.0f, 1.0f);
+        Ks = vec4(0.5,0.5,0.5, 1.0f);
+        Ka = vec4(0.4f, 0.2f, 0.0f, 1.0f);
         q = 64.0;
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == BABYCOW ) {
-        Kd = vec3(0.3f, 0.5f, 0.8f);
-        Ks = vec3(0.5,0.5,0.5);
-        Ka = vec3(0.1f, 0.2f, 0.3f);
+        Kd = vec4(0.3f, 0.5f, 0.8f, 1.0f);
+        Ks = vec4(0.5,0.5,0.5, 1.0f);
+        Ka = vec4(0.1f, 0.2f, 0.3f, 1.0f);
         q = 32.0;
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;    
+    } else if ( object_id == PARTICLE ) {
+        color = vec4(1.0f, yellow_particle_color/10.0f, 0.0f, 0.1f);
     }
     else if ( object_id == PLAYER_HEAD || object_id == PLAYER_FOOT || object_id == PLAYER_HAND) {
-        color = vec3(0.85f, 0.8f, 0.5f);
+        color = vec4(0.85f, 0.8f, 0.5f, 1.0f);
     }
     else if ( object_id == PLAYER_ARM || object_id == PLAYER_TORSO ) {
-        color = vec3(0.05f, 0.4f, 0.1f);
+        color = vec4(0.05f, 0.4f, 0.1f, 1.0f);
     }
     else if ( object_id == PLAYER_LEG ) {
-        color = vec3(0.4f, 0.3f, 0.1f);
+        color = vec4(0.4f, 0.3f, 0.1f, 1.0f);
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    color = pow(color, vec4(1.0,1.0,1.0,1.0)/2.2);
 }
