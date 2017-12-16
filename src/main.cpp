@@ -130,7 +130,7 @@ void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
 void DrawPlayer(float x, float y, float z, float angle_y, float scale);
-Level LoadLevelFromFile(const char* filepath);
+Level LoadLevelFromFile(string filepath);
 void DrawMapObjects();
 void RegisterLevelObjects(Level level);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
@@ -138,6 +138,10 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
 float GetTileToleranceValue(int object_type);
 void MovePlayer();
 void AnimateParticles();
+
+int RenderMainMenu(GLFWwindow* window);
+int RenderLevel(int level_number, GLFWwindow* window);
+int RenderLevelSelection(GLFWwindow* window);
 
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
 void PrintGPUInfoInTerminal();
@@ -211,6 +215,9 @@ std::vector<MapObject> map_objects;
 
 #define PARTICLE 	80
 
+#define ANIMATION_SPEED 10
+#define ITEM_ROTATION_SPEED 0.1
+
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
 int g_WindowWidth = 800, g_WindowHeight = 600;
@@ -261,6 +268,12 @@ bool key_w_pressed = false;
 bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
+bool key_space_pressed = false;
+
+bool esc_pressed = false;
+
+int current_screen = 0;
+int menu_position = 0;
 
 // Angulos de rotação dos itens
 float item_angle_y = 0;
@@ -341,12 +354,6 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage7
     LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage8
 
-    // Variável de controle de animação
-    int curr_anim_tile = 0;
-    int anim_timer = 0;
-    #define ANIMATION_SPEED 10
-    #define ITEM_ROTATION_SPEED 0.1
-
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/objects/sphere.obj");
     ComputeNormals(&spheremodel);
@@ -392,20 +399,185 @@ int main(int argc, char* argv[])
     glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    current_screen = 1;
+    int curlevel = 1;
+
+    while (current_screen > 0) {
+    	// Main menu
+    	if (current_screen == 1)
+    		current_screen = RenderMainMenu(window);
+
+    	// Render level
+    	if (current_screen == 2)
+    		current_screen = RenderLevel(curlevel, window);
+
+    	// Next level
+    	if (current_screen == 3) {
+    		curlevel++;
+    		current_screen = 2;
+    	}
+
+    	// Select level
+    	if (current_screen == 4) {
+    		curlevel = RenderLevelSelection(window);
+    		current_screen = 2;
+    	}
+    }
+
+    // Finalizamos o uso dos recursos do sistema operacional
+    glfwTerminate();
+
+    // Fim do programa
+    return 0;
+}
+
+int RenderMainMenu(GLFWwindow* window) {
+	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	camera_view_vector = camera_lookat_l - camera_position_c;
+
+	while(true) {
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(program_id);
+
+        string newgame_text = "NEW GAME";
+        string selectlevel_text = "SELECT LEVEL";
+        string exit_text = "EXIT GAME";
+
+        if (key_w_pressed and menu_position > 0) {
+        	menu_position--;
+        	key_w_pressed = false;
+        }
+
+        if (key_s_pressed and menu_position < 2) {
+        	menu_position++;
+        	key_s_pressed = false;
+        }
+
+        if (key_space_pressed) {
+        	switch(menu_position) {
+        	case 0: return 2;
+        	case 1: return 4;
+        	case 2: return 0;
+        	}
+        }
+
+        item_angle_y += ITEM_ROTATION_SPEED;
+		if (item_angle_y >= 2*PI)
+			item_angle_y = 0;
+
+        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        glm::mat4 projection;
+        float nearplane = -0.1f;  // Posição do "near plane"
+        float farplane  = -20.0f; // Posição do "far plane"
+
+        // Projeção Ortográfica.
+        float t = 1.5f*g_CameraDistance/2.5f;
+        float b = -t;
+        float r = t*g_ScreenRatio;
+        float l = -r;
+        projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+
+        // Enviamos as matrizes "view" e "projection" para a placa de vídeo.
+        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+
+    	glm::mat4 model = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
+        	* Matrix_Scale(0.1f, 0.1f, 0.1f)
+        	* Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        	* Matrix_Rotate_Y(item_angle_y)
+        	* Matrix_Translate(0.2f, 0.0f, 0.0f);
+        DrawVirtualObject("cow", BABYCOW, model);
+
+        if (menu_position == 0)
+        	TextRendering_PrintString(window, newgame_text, -0.2f, 0.1f, 2.5f);
+        else TextRendering_PrintString(window, newgame_text, -0.2f, 0.1f, 2.0f);
+
+        if (menu_position == 1)
+        	TextRendering_PrintString(window, selectlevel_text, -0.2f, -0.1f, 2.5f);
+        else TextRendering_PrintString(window, selectlevel_text, -0.2f, -0.1f, 2.0f);
+
+        if (menu_position == 2)
+        	TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.5f);
+        else TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.0f);     
+
+        if (g_ShowInfoText) {
+            TextRendering_ShowFramesPerSecond(window);
+        }
+
+        glfwSwapBuffers(window);
+        // Verificação de eventos
+        glfwPollEvents();
+	}
+	return -1;
+}
+
+int RenderLevelSelection(GLFWwindow* window) {
+	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+
+	while(true) {
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(program_id);
+
+        if (esc_pressed)
+        	return 1;
+
+        string enterlevel_text = "ENTER LEVEL: ";
+        string go_text = "GO!";
+
+        TextRendering_PrintString(window, enterlevel_text, -0.4f, 0.1f, 2.0f);
+        TextRendering_PrintString(window, go_text, -0.05f, -0.05f, 2.0f);
+
+        if (g_ShowInfoText) {
+            TextRendering_ShowFramesPerSecond(window);
+        }
+
+        glfwSwapBuffers(window);
+        // Verificação de eventos
+        glfwPollEvents();
+	}	
+	return -1;
+}
+
+int RenderLevel(int level_number, GLFWwindow* window) {
+	// Reset variables
+	item_angle_y = 0;
+	particles.clear();
+	for(int i=0; i<4; i++)
+		collected_keys[i] = 0;
+	collected_babies = 0;
+	endmap = false;
+	death_by_water = false;
+	water_death_timer = 1000;
+	map_objects.clear();
+	g_useFirstPersonCamera = false;
+
     // Carrega nível um
-    Level level_one = LoadLevelFromFile("../../data/levels/1");
-    RegisterLevelObjects(level_one);
-    level_babies = level_one.babies;
-    player_position = GetPlayerSpawnCoordinates(level_one.plant);
+    string levelpath = "../../data/levels/" + std::to_string(level_number);
+    Level level = LoadLevelFromFile(levelpath);
+    RegisterLevelObjects(level);
+    level_babies = level.babies;
+    player_position = GetPlayerSpawnCoordinates(level.plant);
     camera_lookat_l = player_position;
 
-    // Ficamos em loop, renderizando, até que o usuário feche a janela
-    while (!glfwWindowShouldClose(window))
+    // Variável de controle de animação
+    int curr_anim_tile = 0;
+    int anim_timer = 0;
+
+    // Ficamos em loop, renderizando
+    while (true)
     {
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program_id);
+
+        if(esc_pressed)
+        	return 1;
 
         if(endmap)
         	printf("endmap\n");
@@ -417,7 +589,7 @@ int main(int argc, char* argv[])
         	if (water_death_timer <= 0) {
         		death_by_water = false;
         		water_death_timer = 1000;
-        		player_position = GetPlayerSpawnCoordinates(level_one.plant);
+        		player_position = GetPlayerSpawnCoordinates(level.plant);
     			camera_lookat_l = player_position;
     			straight_vector_sign = 1.0f;
 				sideways_vector_sign = 0.0f;
@@ -507,14 +679,10 @@ int main(int argc, char* argv[])
         glfwSwapBuffers(window);
         // Verificação de eventos
         glfwPollEvents();
-    }
-
-    // Finalizamos o uso dos recursos do sistema operacional
-    glfwTerminate();
-
-    // Fim do programa
-    return 0;
+    }	
+    return -1;
 }
+
 
 // Converte um vetor para coordenadas homogêneas
 vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
@@ -1115,24 +1283,24 @@ void MoveBlock(int block_index) {
 
 // Destranca portas
 void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
-	for (unsigned int i = 0; i < red.size(); i++) {
-		collected_keys[0]--;
-		map_objects.erase(map_objects.begin() + red[i]);
-	}
-
-	for (unsigned int i = 0; i < green.size(); i++) {
-		collected_keys[1]--;
-		map_objects.erase(map_objects.begin() + green[i]);
+	for (unsigned int i = 0; i < yellow.size(); i++) {
+		collected_keys[3]--;
+		map_objects.erase(map_objects.begin() + (yellow[yellow.size() - 1 - i]));
 	}
 
 	for (unsigned int i = 0; i < blue.size(); i++) {
 		collected_keys[2]--;
-		map_objects.erase(map_objects.begin() + blue[i]);
+		map_objects.erase(map_objects.begin() + (blue[blue.size() - 1 - i]));
 	}
 
-	for (unsigned int i = 0; i < yellow.size(); i++) {
-		collected_keys[3]--;
-		map_objects.erase(map_objects.begin() + yellow[i]);
+	for (unsigned int i = 0; i < green.size(); i++) {
+		collected_keys[1]--;
+		map_objects.erase(map_objects.begin() + (green[green.size() - 1 - i]));
+	}
+
+	for (unsigned int i = 0; i < red.size(); i++) {
+		collected_keys[0]--;
+		map_objects.erase(map_objects.begin() + (red[red.size() - 1 - i]));
 	}
 }
 
@@ -1542,10 +1710,10 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model) {
 }
 
 // Função que carrega um nível a partir de um arquivo (parser)
-Level LoadLevelFromFile(const char* filepath) {
+Level LoadLevelFromFile(string filepath) {
     Level loaded_level;
 
-    printf("Carregando nivel \"%s\"... ", filepath);
+    printf("Carregando nivel \"%s\"... ", filepath.c_str());
 
     std::ifstream level_file;
     level_file.open(filepath);
@@ -1861,6 +2029,9 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
+	if (current_screen != 2)
+		return;
+
     // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
     double dx = xpos - g_LastCursorPosX;
     double dy = ypos - g_LastCursorPosY;
@@ -1909,53 +2080,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    // O código abaixo implementa a seguinte lógica:
-    //   Se apertar tecla X       então g_AngleX += delta;
-    //   Se apertar tecla shift+X então g_AngleX -= delta;
-    //   Se apertar tecla Y       então g_AngleY += delta;
-    //   Se apertar tecla shift+Y então g_AngleY -= delta;
-    //   Se apertar tecla Z       então g_AngleZ += delta;
-    //   Se apertar tecla shift+Z então g_AngleZ -= delta;
-
-    float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        g_AngleX = 0.0f;
-        g_AngleY = 0.0f;
-        g_AngleZ = 0.0f;
-    }
-
     // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
     if (key == GLFW_KEY_H && action == GLFW_PRESS)
     {
         g_ShowInfoText = !g_ShowInfoText;
     }
 
-    // Se o usuário apertar a tecla R, recarregamos os shaders dos arquivos "shader_fragment.glsl" e "shader_vertex.glsl".
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-    {
-        LoadShadersFromFiles();
-        fprintf(stdout,"Shaders recarregados!\n");
-        fflush(stdout);
-    }
-
-    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+    if (key == GLFW_KEY_C && action == GLFW_PRESS && current_screen == 2)
         g_useFirstPersonCamera = !(g_useFirstPersonCamera);
 
     // Verifica se as teclas de movimentação foram pressionadas/soltas
@@ -1997,6 +2128,26 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
     {
         key_d_pressed = false;
+    }
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+    	esc_pressed = true;
+    }
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+    {
+    	esc_pressed = false;
+    }
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+    	key_space_pressed = true;
+    }
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+    {
+    	key_space_pressed = false;
     }
 }
 
