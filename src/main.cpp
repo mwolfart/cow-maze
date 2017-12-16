@@ -451,6 +451,7 @@ int RenderMainMenu(GLFWwindow* window) {
 	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	camera_view_vector = camera_lookat_l - camera_position_c;
+	menu_position = 0;
 
 	while(true) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -531,7 +532,13 @@ int RenderMainMenu(GLFWwindow* window) {
 }
 
 int RenderLevelSelection(GLFWwindow* window) {
-	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	camera_view_vector = camera_lookat_l - camera_position_c;
+	menu_position = 0;
+	int chosen_level = 1;
+	bool choosing_level = false;
+	key_space_pressed = false;
 
 	while(true) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -542,11 +549,75 @@ int RenderLevelSelection(GLFWwindow* window) {
         if (esc_pressed)
         	return 1;
 
+        if ((key_w_pressed and menu_position > 0) && !choosing_level) {
+        	menu_position--;
+        	key_w_pressed = false;
+        } else if (key_w_pressed && choosing_level) {
+        	chosen_level = std::max(chosen_level-1, 1);
+        	key_w_pressed = false;
+        }
+
+        if ((key_s_pressed and menu_position < 1) && !choosing_level) {
+        	menu_position++;
+        	key_s_pressed = false;
+        } else if (key_s_pressed && choosing_level) {
+        	chosen_level = std::min(chosen_level+1, 10);
+        	key_s_pressed = false;
+        }
+
+        if (key_space_pressed) {
+        	key_space_pressed = false;
+        	switch(menu_position) {
+        	case 0: {
+        		choosing_level = !choosing_level; 
+        		break;
+        	}
+        	case 1: return chosen_level;
+        	}
+        }
+
+        item_angle_y += ITEM_ROTATION_SPEED;
+		if (item_angle_y >= 2*PI)
+			item_angle_y = 0;
+
+        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        glm::mat4 projection;
+        float nearplane = -0.1f;  // Posição do "near plane"
+        float farplane  = -20.0f; // Posição do "far plane"
+
+        // Projeção Ortográfica.
+        float t = 1.5f*g_CameraDistance/2.5f;
+        float b = -t;
+        float r = t*g_ScreenRatio;
+        float l = -r;
+        projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+
+        // Enviamos as matrizes "view" e "projection" para a placa de vídeo.
+        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+
+    	glm::mat4 model = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
+        	* Matrix_Scale(0.1f, 0.1f, 0.1f)
+        	* Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        	* Matrix_Rotate_Y(item_angle_y)
+        	* Matrix_Translate(0.2f, 0.0f, 0.0f);
+        DrawVirtualObject("cow", BABYCOW, model);
+
         string enterlevel_text = "ENTER LEVEL: ";
+        string lvtext[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
         string go_text = "GO!";
 
-        TextRendering_PrintString(window, enterlevel_text, -0.4f, 0.1f, 2.0f);
-        TextRendering_PrintString(window, go_text, -0.05f, -0.05f, 2.0f);
+        if(menu_position == 0 && !choosing_level)
+        	TextRendering_PrintString(window, enterlevel_text, -0.2f, 0.1f, 2.5f);
+        else TextRendering_PrintString(window, enterlevel_text, -0.2f, 0.1f, 2.0f);
+
+        if(choosing_level)
+        	TextRendering_PrintString(window, lvtext[chosen_level - 1], 0.45f, 0.1f, 2.5f);
+        else TextRendering_PrintString(window, lvtext[chosen_level - 1], 0.45f, 0.1f, 2.0f);
+
+        if(menu_position == 1 && !choosing_level)
+        	TextRendering_PrintString(window, go_text, -0.2f, -0.05f, 2.5f);
+        else TextRendering_PrintString(window, go_text, -0.2f, -0.05f, 2.0f);
 
         if (g_ShowInfoText) {
             TextRendering_ShowFramesPerSecond(window);
