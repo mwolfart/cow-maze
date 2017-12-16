@@ -32,6 +32,9 @@ uniform mat4 projection;
 #define DOOR_BLUE   19
 #define DOOR_YELLOW 20
 #define BABYCOW     21
+#define JET         22
+#define BEACHBALL   23
+#define VOLLEYBALL  24
 
 #define KEY_RED     30
 #define KEY_GREEN   31
@@ -152,14 +155,6 @@ void main()
     }
     else if ( object_id == FLOOR )
     {
-       /* int number_of_repetitions = 32;
-        float period = 1.0f/number_of_repetitions;
-        U = mod(texcoords.x, period)*number_of_repetitions;
-        V = mod(texcoords.y, period)*number_of_repetitions;
-
-        Kd = texture(TextureImage0, vec2(U,V)).rgba;
-        color = Kd * (lambert + 0.01);
-        */
         U = texcoords.x;
         V = texcoords.y;
 
@@ -266,9 +261,45 @@ void main()
         vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
         vec4 ambient_term = Ka * Ia;
         vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
-        color = lambert_diffuse_term + ambient_term + phong_specular_term;    
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
     } else if ( object_id == PARTICLE ) {
         color = vec4(1.0f, yellow_particle_color/10.0f, 0.0f, 0.1f);
+    } else if ( object_id == JET ) {
+        Kd = vec4(0.2f, 0.3f, 0.4f, 1.0f);
+        Ks = vec4(0.5, 0.5, 0.7, 1.0f);
+        Ka = vec4(0.1f, 0.1f, 0.1f, 1.0f);
+        q = 32.0;
+
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    } else if ( object_id == BEACHBALL ) {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        Kd = texture(TextureImage7, vec2(U,V)).rgba;
+        Ks = vec4(0.5, 0.5, 0.7, 1.0f);
+        Ka = vec4(0.4f, 0.4f, 0.4f, 1.0f);
+        q = 32.0;
+
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    } else if ( object_id == VOLLEYBALL ) {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        Kd = texture(TextureImage6, vec2(U,V)).rgba;
+        Ks = vec4(0.5, 0.5, 0.7, 1.0f);
+        Ka = vec4(0.4f, 0.4f, 0.4f, 1.0f);
+        q = 32.0;
+
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == PLAYER_HEAD || object_id == PLAYER_FOOT || object_id == PLAYER_HAND) {
         color = vec4(0.85f, 0.8f, 0.5f, 1.0f);

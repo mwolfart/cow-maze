@@ -91,6 +91,9 @@ struct MapObject {
     int object_type;
     vec4 object_position;
     vec3 object_size;
+    vec3 model_size;
+    int direction;
+    float gravity;
     const char * obj_file_name;
 };
 
@@ -133,10 +136,14 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale);
 Level LoadLevelFromFile(string filepath);
 void DrawMapObjects();
 void RegisterLevelObjects(Level level);
+void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
 void RegisterObjectInMapVector(char tile_type, float x, float z);
-void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name);
 float GetTileToleranceValue(int object_type);
+int GetVectorObjectType(vecInt vector_objects, int type);
+vecInt GetObjectsCollidingWithPlayer(vec4 player_position);
+bool CollidedWithEnemy(vecInt vector_objects);
 void MovePlayer();
+void MoveEnemies();
 void AnimateParticles();
 
 int RenderMainMenu(GLFWwindow* window);
@@ -200,6 +207,9 @@ std::vector<MapObject> map_objects;
 #define DOOR_BLUE	19
 #define DOOR_YELLOW	20
 #define BABYCOW 	21
+#define JET         22
+#define BEACHBALL   23
+#define VOLLEYBALL  24
 
 #define KEY_RED 	30
 #define KEY_GREEN 	31
@@ -289,7 +299,8 @@ bool endmap = false;
 
 // Variáveis de animações de mortes
 bool death_by_water = false;
-int water_death_timer = 1000;
+bool death_by_enemy = false;
+int death_timer = 1000;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -378,6 +389,11 @@ int main(int argc, char* argv[])
     ObjModel keymodel("../../data/objects/key.obj");
     ComputeNormals(&keymodel);
     BuildTrianglesAndAddToVirtualScene(&keymodel);
+
+    ObjModel jetmodel("../../data/objects/jet.obj");
+    ComputeNormals(&jetmodel);
+    BuildTrianglesAndAddToVirtualScene(&jetmodel);
+
 
     if ( argc > 1 )
     {
@@ -501,7 +517,7 @@ int RenderMainMenu(GLFWwindow* window) {
 
         if (menu_position == 2)
         	TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.5f);
-        else TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.0f);     
+        else TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.0f);
 
         if (g_ShowInfoText) {
             TextRendering_ShowFramesPerSecond(window);
@@ -539,7 +555,7 @@ int RenderLevelSelection(GLFWwindow* window) {
         glfwSwapBuffers(window);
         // Verificação de eventos
         glfwPollEvents();
-	}	
+	}
 	return -1;
 }
 
@@ -552,7 +568,8 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 	collected_babies = 0;
 	endmap = false;
 	death_by_water = false;
-	water_death_timer = 1000;
+	death_by_enemy = false;
+	death_timer = 1000;
 	map_objects.clear();
 	g_useFirstPersonCamera = false;
 
@@ -579,16 +596,28 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         if(esc_pressed)
         	return 1;
 
-        if(endmap)
-        	printf("endmap\n");
+        if(endmap) {
+        	return 3;
+        }
 
         // Movimentação do personagem
         if (death_by_water) {
         	player_position[1] -= 0.01f;
-        	water_death_timer -= 10;
-        	if (water_death_timer <= 0) {
+        	death_timer -= 10;
+        	if (death_timer <= 0) {
         		death_by_water = false;
-        		water_death_timer = 1000;
+        		death_timer = 1000;
+        		player_position = GetPlayerSpawnCoordinates(level.plant);
+    			camera_lookat_l = player_position;
+    			straight_vector_sign = 1.0f;
+				sideways_vector_sign = 0.0f;
+        	}
+        }
+        else if (death_by_enemy) {
+        	death_timer -= 10;
+        	if (death_timer <= 0) {
+        		death_by_enemy = false;
+        		death_timer = 1000;
         		player_position = GetPlayerSpawnCoordinates(level.plant);
     			camera_lookat_l = player_position;
     			straight_vector_sign = 1.0f;
@@ -641,6 +670,10 @@ int RenderLevel(int level_number, GLFWwindow* window) {
             vecangle = -vecangle;
         DrawPlayer(player_position[0], player_position[1] - 0.3f, player_position[2], vecangle + PI/2, 0.3f);
 
+        if (CollidedWithEnemy(GetObjectsCollidingWithPlayer(player_position))) {
+        	death_by_enemy = true;
+        }
+
         ///////////////////
         // RESTO DO MAPA //
         ///////////////////
@@ -667,6 +700,9 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 		// Fogo: partículas
 		AnimateParticles();
 
+		// Movimenta inimigos
+		MoveEnemies();
+
 		// Mostra itens na tela
 		ShowInventory(window);
 
@@ -679,7 +715,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         glfwSwapBuffers(window);
         // Verificação de eventos
         glfwPollEvents();
-    }	
+    }
     return -1;
 }
 
@@ -788,6 +824,9 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
     float cube_vertical_shift = -0.5f;
 
+    vec3 dirtblock_size = vec3(0.8f, 0.8f, 0.8f);
+    float dirtblock_vertical_shift = -0.6f;
+
     vec3 key_size = vec3(0.1f, 0.1f, 0.1f);
     float key_vertical_shift = -1.0f;
 
@@ -797,118 +836,145 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     vec3 babycow_size = vec3(0.35f, 0.35f, 0.35f);
     float babycow_vertical_shift = -0.5f;
 
+    vec3 jetmodel_size = vec3(0.03f, 0.03f, 0.03f);
+    vec3 jet_size = vec3(0.8f, 0.8f, 0.8f);
+    float jet_vertical_shift = -0.5f;
+
+    vec3 sphere_size = vec3(0.4f, 0.4f, 0.4f);
+    vec3 ball_size = vec3(0.8f, 0.8f, 0.8f);
+    float sphere_vertical_shift = -0.5f;
+
     // Tile plano
-    vec3 tile_size = vec3(1.0f, 1.0f, 1.0f);
+    vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
+    vec3 planemodel_size = vec3(1.0f, 1.0f, 1.0f);
     float floor_shift = -1.0f;
 
     /* Adicione novos tipos de objetos abaixo */
     switch(tile_type) {
     // Cubo
     case 'B': {
-        RegisterObjectInMap(WALL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
+        RegisterObjectInMap(WALL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         break;
     }
 
     // Água
     case 'W':{
-        RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), cube_size, "plane", planemodel_size);
         break;
     }
 
     // Porta vermelha:
     case 'f':{
-        RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire", cube_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Terra
     case 'd':{
-        RegisterObjectInMap(DIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Bloco de terra
     case 'D':{
-        RegisterObjectInMap(DIRTBLOCK, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DIRTBLOCK, vec4(x, dirtblock_vertical_shift, z, 1.0f), dirtblock_size, "cube", dirtblock_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Chave vermelha
     case 'r':{
-    	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
     // Chave verde
     case 'g':{
-    	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave azul
     case 'b':{
-    	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave amarela
     case 'y':{
-    	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key");
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+    	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
     // Porta vermelha:
     case 'R':{
-        RegisterObjectInMap(DOOR_RED, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DOOR_RED, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta verde:
     case 'G':{
-        RegisterObjectInMap(DOOR_GREEN, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DOOR_GREEN, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta azul:
     case 'A':{
-        RegisterObjectInMap(DOOR_BLUE, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DOOR_BLUE, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta amarela:
     case 'Y':{
-        RegisterObjectInMap(DOOR_YELLOW, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(DOOR_YELLOW, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Vaquinha bebê:
     case 'c':{
-        RegisterObjectInMap(BABYCOW, vec4(x, babycow_vertical_shift, z, 1.0f), babycow_size, "cow");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(BABYCOW, vec4(x, babycow_vertical_shift, z, 1.0f), babycow_size, "cow", babycow_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Vaca mãe:
     case 'C':{
-        RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow");
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow", cow_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case 'j':{
+        RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case '0':{
+        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 0, 0.2f);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case '9':{
+        RegisterObjectInMap(VOLLEYBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Jogador e piso
     case 'P':
     case 'F':{
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane");
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
@@ -918,12 +984,15 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
 }
 
 // Função que adiciona um objeto ao mapa
-void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name) {
+void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction, float gravity) {
     MapObject new_object;
     new_object.object_type = obj_id;
     new_object.object_size = obj_size;
     new_object.object_position = obj_position;
     new_object.obj_file_name = obj_file_name;
+    new_object.model_size = model_size;
+    new_object.direction = direction;
+    new_object.gravity = gravity;
     map_objects.push_back(new_object);
 }
 
@@ -936,27 +1005,39 @@ void DrawMapObjects() {
 
         if ((obj_type == KEY_RED) || (obj_type == KEY_GREEN) || (obj_type == KEY_BLUE) || (obj_type == KEY_YELLOW)) {
         	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z)
+        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
         		* Matrix_Translate(0.0f, 5.7f, 0.0f)
         		* Matrix_Rotate_Y(item_angle_y)
         		* Matrix_Rotate_Z(PI/5)
         		* Matrix_Translate(0.0f, -5.7f, 0.0f);
         } else if (obj_type == BABYCOW) {
     		model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z)
+        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
         		* Matrix_Translate(-0.2f, 0.0f, 0.0f)
         		* Matrix_Rotate_Y(item_angle_y)
         		* Matrix_Translate(0.2f, 0.0f, 0.0f);
         } else if (obj_type == FIRE) {
-        	GenerateParticles(5, current_object.object_position, current_object.object_size);
+        	GenerateParticles(5, current_object.object_position, current_object.model_size);
         	DrawParticles();
+        } else if (obj_type == JET) {
+        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
+        		* Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        		* Matrix_Rotate_Y(current_object.direction * PI/2)
+        		* Matrix_Translate(0.2f, 0.0f, 0.0f);
    		} else {
         	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.object_size.x, current_object.object_size.y, current_object.object_size.z);
+        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z);
         }
-        
+
         DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
     }
+}
+
+float maxfloat(float a, float b) {
+	if (a < b)
+		return b;
+	else return a;
 }
 
 // Função que desenha o jogador usando transformações hierárquicas
@@ -965,6 +1046,7 @@ void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
     glm::mat4 model = Matrix_Identity();
 
     model = Matrix_Translate(x, y, z) * Matrix_Rotate_Y(angle_y);
+    if (death_by_enemy) model = model * Matrix_Translate(0.0f, -0.6f, 0.0f) * Matrix_Rotate_X(maxfloat(death_timer * 0.002f - 2.0f, -PI/2)) * Matrix_Translate(0.0f, 0.6f, 0.0f);
     PushMatrix(model);
         model = model * Matrix_Scale(0.8f * scale, 1.1f * scale, 0.2f * scale);
         DrawVirtualObject("cube", PLAYER_TORSO, model);
@@ -1083,10 +1165,10 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 float GetTileToleranceValue(int object_type) {
 	switch(object_type) {
     	case WALL:
-    	case DIRTBLOCK: 
+    	case DIRTBLOCK:
     	case DOOR_RED:
     	case DOOR_GREEN:
-    	case DOOR_BLUE: 
+    	case DOOR_BLUE:
     	case DOOR_YELLOW: {
     		return 0.25f;
     	}
@@ -1119,16 +1201,19 @@ vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
 
         // Computa dimensões e limites do objeto
         vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
-        vec4 obj_end = GetObjectBottomBoundary(obj_position, obj_size);
-        
+        vec4 obj_end = vec4(obj_start.x + obj_size.x, obj_start.y + obj_size.y, obj_start.z + obj_size.z, 1.0f);
+
         // Computa valor de tolerância (quanto o player pode andar "dentro" do objeto, ou quanto ele deve ficar longe)
         float tol = GetTileToleranceValue(map_objects[obj_index].object_type);
 
+        float player_height = 1.0f;
+        float y = -1.0f;
+
         bool is_x_in_collision_interval = (player_position.x <= obj_end.x + tol && player_position.x >= obj_start.x - tol);
-        //bool is_y_in_collision_interval = (player_position.y <= obj_end.y && player_position.y >= obj_start.y);
+        bool is_y_in_collision_interval = (y <= obj_start.y && obj_start.y < y + player_height) || (obj_start.y <= y && y < obj_end.y);
         bool is_z_in_collision_interval = (player_position.z <= obj_end.z + tol && player_position.z >= obj_start.z - tol);
 
-        if (is_x_in_collision_interval /*&& is_y_in_collision_interval*/ && is_z_in_collision_interval)
+        if (is_x_in_collision_interval && is_y_in_collision_interval && is_z_in_collision_interval)
         	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
 
         obj_index++;
@@ -1138,38 +1223,15 @@ vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
 }
 
 // Dado os limites de dois objetos (os dois cantos), verifica se os dois colidem ou não
-bool TestCubeCollision(vec4 obj1_start_pos, vec4 obj1_end_pos, vec4 obj2_start_pos, vec4 obj2_end_pos) {
-	// Para o primeiro objeto, computa os 8 pontos ao redor dele (ignora-se o y por enquanto, pois todos os objetos estão no mesmo plano),
-	//  e verifica-se se cada um desses 8 pontos está nos limites do outro objeto
-	vec4 obj1_corner1 = obj1_start_pos;
-	vec4 obj1_corner2 = vec4(obj1_start_pos.x, 0.0f, obj1_end_pos.z, 1.0f);
-	vec4 obj1_corner3 = vec4(obj1_end_pos.x, 0.0f, obj1_start_pos.z, 1.0f);
-	vec4 obj1_corner4 = obj1_end_pos;
-	vec4 obj1_side1 = vec4(obj1_corner1.x + (obj1_corner3.x - obj1_corner1.x)/2.0f, 0.0f, obj1_corner1.z, 1.0f);
-	vec4 obj1_side2 = vec4(obj1_corner1.x, 0.0f, obj1_corner1.z + (obj1_corner2.z - obj1_corner1.z)/2.0f, 1.0f);
-	vec4 obj1_side3 = vec4(obj1_corner2.x + (obj1_corner4.x - obj1_corner2.x)/2.0f, 0.0f, obj1_corner2.z, 1.0f);
-	vec4 obj1_side4 = vec4(obj1_corner3.x, 0.0f, obj1_corner3.z + (obj1_corner4.z - obj1_corner3.z)/2.0f, 1.0f);
-
-	bool is_x_in_collision_interval = ((obj1_corner1.x < obj2_end_pos.x && obj1_corner1.x > obj2_start_pos.x)
-										|| (obj1_corner2.x < obj2_end_pos.x && obj1_corner2.x > obj2_start_pos.x)
-										|| (obj1_corner3.x < obj2_end_pos.x && obj1_corner3.x > obj2_start_pos.x)
-										|| (obj1_corner4.x < obj2_end_pos.x && obj1_corner4.x > obj2_start_pos.x)
-										|| (obj1_side1.x < obj2_end_pos.x && obj1_side1.x > obj2_start_pos.x)
-										|| (obj1_side2.x < obj2_end_pos.x && obj1_side2.x > obj2_start_pos.x)
-										|| (obj1_side3.x < obj2_end_pos.x && obj1_side3.x > obj2_start_pos.x)
-										|| (obj1_side4.x < obj2_end_pos.x && obj1_side4.x > obj2_start_pos.x));
-    bool is_z_in_collision_interval = ((obj1_corner1.z < obj2_end_pos.z && obj1_corner1.z > obj2_start_pos.z)
-										|| (obj1_corner2.z < obj2_end_pos.z && obj1_corner2.z > obj2_start_pos.z)
-										|| (obj1_corner3.z < obj2_end_pos.z && obj1_corner3.z > obj2_start_pos.z)
-										|| (obj1_corner4.z < obj2_end_pos.z && obj1_corner4.z > obj2_start_pos.z)
-										|| (obj1_side1.z < obj2_end_pos.z && obj1_side1.z > obj2_start_pos.z)
-										|| (obj1_side2.z < obj2_end_pos.z && obj1_side2.z > obj2_start_pos.z)
-										|| (obj1_side3.z < obj2_end_pos.z && obj1_side3.z > obj2_start_pos.z)
-										|| (obj1_side4.z < obj2_end_pos.z && obj1_side4.z > obj2_start_pos.z));
-
-    if (is_x_in_collision_interval && is_z_in_collision_interval)
-    	return true;
-    else return false;
+bool TestCubeCollision(vec4 obj1_pos, vec4 obj2_pos, vec3 obj1_size, vec3 obj2_size) {
+	float epsilon = 0.0f;
+	if ( 
+   		((obj1_pos.x - epsilon <= obj2_pos.x && obj2_pos.x < obj1_pos.x + obj1_size.x + epsilon) || (obj2_pos.x - epsilon <= obj1_pos.x && obj1_pos.x < obj2_pos.x + obj2_size.x + epsilon)) &&
+   		((obj1_pos.y <= obj2_pos.y && obj2_pos.y < obj1_pos.y + obj1_size.y) || (obj2_pos.y <= obj1_pos.y && obj1_pos.y < obj2_pos.y + obj2_size.y)) &&
+   		((obj1_pos.z - epsilon <= obj2_pos.z && obj2_pos.z < obj1_pos.z + obj1_size.z + epsilon) || (obj2_pos.z - epsilon <= obj1_pos.z && obj1_pos.z < obj2_pos.z + obj2_size.z + epsilon)) 
+   		)
+		return true;
+	else return false;
 }
 
 // Pega todos os objetos que colidem com outro objeto, dado o índice
@@ -1181,8 +1243,6 @@ vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) 
     // Computa dimensões e limites do objeto a ser testado
     vec3 target_obj_size = map_objects[target_obj_index].object_size;
     vec4 target_obj_start = GetObjectTopBoundary(target_obj_pos, target_obj_size);
-    vec4 target_obj_end = GetObjectBottomBoundary(target_obj_pos, target_obj_size);
-
     // Varre todos os objetos do nível
     while (obj_index < map_objects.size()) {
     	// O próprio objeto está na lista e deve ser ignorado
@@ -1196,9 +1256,8 @@ vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) 
 
         // Computa dimensões e limites do objeto atual
         vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
-        vec4 obj_end = GetObjectBottomBoundary(obj_position, obj_size);
 
-        if (TestCubeCollision(target_obj_start, target_obj_end, obj_start, obj_end))
+        if (TestCubeCollision(target_obj_start, obj_start, target_obj_size, obj_size))
         	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
 
         obj_index++;
@@ -1219,12 +1278,139 @@ bool vectorHasBlockBlockingObject(vecInt vector_objects) {
 		// Adicione novos objetos bloqueantes aqui
 		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT)
 			|| (colliding_obj_type == DOOR_RED) || (colliding_obj_type == DOOR_GREEN) || (colliding_obj_type == DOOR_BLUE) || (colliding_obj_type == DOOR_YELLOW)
-			|| (colliding_obj_type == COW))
+			|| (colliding_obj_type == COW) || (colliding_obj_type == JET) || (colliding_obj_type == BEACHBALL) || (colliding_obj_type == VOLLEYBALL))
 			return true;
 		curr_index++;
 	}
 
 	return false;
+}
+
+bool vectorHasBallBlockingObject(vecInt vector_objects) {
+	unsigned int curr_index = 0;
+	vecInt movable_blocks;
+
+	while (curr_index < vector_objects.size()) {
+		int curr_obj_index = vector_objects[curr_index];
+		int colliding_obj_type = map_objects[curr_obj_index].object_type;
+		// Adicione novos objetos bloqueantes aqui
+		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT)
+			|| (colliding_obj_type == DOOR_RED) || (colliding_obj_type == DOOR_GREEN) || (colliding_obj_type == DOOR_BLUE) || (colliding_obj_type == DOOR_YELLOW)
+			|| (colliding_obj_type == COW) || (colliding_obj_type == JET) || (colliding_obj_type == BEACHBALL) || (colliding_obj_type == VOLLEYBALL)
+			|| (colliding_obj_type == FLOOR))
+			return true;
+		curr_index++;
+	}
+
+	return false;
+}
+
+void MoveJet(int jet_index) {
+	vec4 target_pos = map_objects[jet_index].object_position;
+
+	switch(map_objects[jet_index].direction) {
+		case 0: {
+			target_pos.z += MOVEMENT_AMOUNT;
+			break;
+		}
+		case 1: {
+			target_pos.x += MOVEMENT_AMOUNT;
+			break;
+		}
+		case 2: {
+			target_pos.z -= MOVEMENT_AMOUNT;
+			break;
+		}
+		case 3: {
+			target_pos.x -= MOVEMENT_AMOUNT;
+			break;
+		}
+	}
+
+	vecInt collided_objects = GetObjectsCollidingWithObject(jet_index, target_pos);
+
+	if (!vectorHasBlockBlockingObject(collided_objects)) {
+		map_objects[jet_index].object_position = target_pos;
+
+		// Testa se atingiu fogo. Se atingiu, morre
+		int fire_index = GetVectorObjectType(collided_objects, FIRE);
+		if (fire_index >= 0) {
+		    map_objects.erase(map_objects.begin() + jet_index);
+	    }
+	}
+	else map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
+}
+
+void MoveBeachBall(int ball_index) {
+	vec4 target_pos = map_objects[ball_index].object_position;
+
+	switch(map_objects[ball_index].direction) {
+		case 0: {
+			target_pos.z += MOVEMENT_AMOUNT;
+			break;
+		}
+		case 1: {
+			target_pos.x += MOVEMENT_AMOUNT;
+			break;
+		}
+		case 2: {
+			target_pos.z -= MOVEMENT_AMOUNT;
+			break;
+		}
+		case 3: {
+			target_pos.x -= MOVEMENT_AMOUNT;
+			break;
+		}
+	}
+
+	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
+
+	if (!vectorHasBlockBlockingObject(collided_objects)) {
+		map_objects[ball_index].object_position = target_pos;
+
+		// Testa se atingiu fogo. Se atingiu, morre
+		int fire_index = GetVectorObjectType(collided_objects, FIRE);
+		int water_index = GetVectorObjectType(collided_objects, WATER);
+		if ((fire_index >= 0) || (water_index >= 0)) {
+		    map_objects.erase(map_objects.begin() + ball_index);
+	    }
+	}
+	else map_objects[ball_index].direction = (map_objects[ball_index].direction + 2) % 4;
+}
+
+void MoveVolleyBall(int ball_index) {
+	vec4 target_pos = map_objects[ball_index].object_position;
+
+	target_pos.y -= map_objects[ball_index].gravity;
+	if (map_objects[ball_index].gravity < 0.2f)
+		map_objects[ball_index].gravity += 0.005f;
+
+	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
+
+	if (!vectorHasBallBlockingObject(collided_objects)) {
+		map_objects[ball_index].object_position = target_pos;
+
+		// Testa se atingiu fogo. Se atingiu, morre
+		int fire_index = GetVectorObjectType(collided_objects, FIRE);
+		int water_index = GetVectorObjectType(collided_objects, WATER);
+		if ((fire_index >= 0) || (water_index >= 0)) {
+		    map_objects.erase(map_objects.begin() + ball_index);
+	    }
+	}
+	else {
+		map_objects[ball_index].gravity = -0.2f;
+	}
+}
+
+void MoveEnemies() {
+	for (unsigned int i = 0; i < map_objects.size(); i++) {
+		if (map_objects[i].object_type == JET)
+			MoveJet(i);
+		else if (map_objects[i].object_type == BEACHBALL)
+			MoveBeachBall(i);
+		else if (map_objects[i].object_type == VOLLEYBALL)
+			MoveVolleyBall(i);
+	}
 }
 
 // Dado um vetor de objetos, retorna o primeiro objeto de um dado tipo
@@ -1241,6 +1427,23 @@ int GetVectorObjectType(vecInt vector_objects, int type) {
 
 	return -1;
 }
+
+bool CollidedWithEnemy(vecInt vector_objects) {
+	unsigned int curr_index = 0;
+
+	while(curr_index < vector_objects.size()) {
+		int current_obj_index = vector_objects[curr_index];
+
+		if (map_objects[current_obj_index].object_type == JET
+			|| map_objects[current_obj_index].object_type == BEACHBALL
+			|| map_objects[current_obj_index].object_type == VOLLEYBALL)
+			return true;
+		curr_index++;
+	}
+
+	return false;
+}
+
 
 
 // Função que move um bloco
@@ -1449,8 +1652,10 @@ void MovePlayer() {
 		    int collided_bluekey_index = GetVectorObjectType(collided_objects, KEY_BLUE);
 		    int collided_yellowkey_index = GetVectorObjectType(collided_objects, KEY_YELLOW);
 		    int collided_baby_index = GetVectorObjectType(collided_objects, BABYCOW);
-
-		    if (GetVectorObjectType(collided_objects, WATER) >= 0) {
+		    
+		    if (CollidedWithEnemy(collided_objects))
+		    	death_by_enemy = true;
+		    else if (GetVectorObjectType(collided_objects, WATER) >= 0) {
 		        death_by_water = true;
 		    } else if (collided_dirt_index >= 0) {
 		        map_objects[collided_dirt_index].object_type = FLOOR;
