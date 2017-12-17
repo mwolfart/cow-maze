@@ -16,7 +16,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <initializer_list>
 
+// SFML: Músicas e Sons
 #include <SFML/Audio.hpp>
 
 // Headers das bibliotecas OpenGL
@@ -101,19 +103,29 @@ struct MapObject {
 
 // Estrutura que define a planta de um nível
 struct Level {
-	int babies;
+	int cow_no;
+    int time;
     int height;
     int width;
     std::vector<std::vector<char>> plant;
 };
 
 // CPU representation of a particle
-struct Particle{
+struct Particle {
 	vec4 position;
 	float speed;
 	vec3 color;
 	float size;
 	float life; // Remaining life of the particle. if < 0 : dead and unused.
+};
+
+struct InventoryKeys {
+    int red, green, blue, yellow;
+};
+
+struct Inventory {
+    InventoryKeys keys;
+    int cows;
 };
 
 ///////////////////////////
@@ -134,7 +146,7 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void PrintObjModelInfo(ObjModel*); // Função para debugging
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void DrawPlayer(float x, float y, float z, float angle_y, float scale);
+void DrawPlayer(vec4 position, float angle_y, float angle_x, float scale);
 Level LoadLevelFromFile(string filepath);
 void DrawMapObjects();
 void RegisterLevelObjects(Level level);
@@ -144,9 +156,12 @@ float GetTileToleranceValue(int object_type);
 int GetVectorObjectType(vecInt vector_objects, int type);
 vecInt GetObjectsCollidingWithPlayer(vec4 player_position);
 bool CollidedWithEnemy(vecInt vector_objects);
+bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball = false);
+void ClearInventory();
 void MovePlayer();
 void MoveEnemies();
 void AnimateParticles();
+float MaxFloat2(float a, float b);
 
 int RenderMainMenu(GLFWwindow* window);
 int RenderLevel(int level_number, GLFWwindow* window);
@@ -170,7 +185,6 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
 void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow* window);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 
@@ -181,15 +195,6 @@ void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-
-///////////////////////
-// VARIÁVEIS GLOBAIS //
-///////////////////////
-
-std::map<string, SceneObject> g_VirtualScene;
-std::stack<glm::mat4>  g_MatrixStack;
-// Vetor que contém dados sobre os objetos dentro do mapa (usado para tratar colisões)
-std::vector<MapObject> map_objects;
 
 /***************************************/
 /** CONSTANTES ESPECÍFICAS DE OBJETOS **/
@@ -230,20 +235,63 @@ std::vector<MapObject> map_objects;
 #define ANIMATION_SPEED 10
 #define ITEM_ROTATION_SPEED 0.1
 
+#define SCREEN_EXIT         0
+#define SCREEN_MAINMENU     1
+#define SCREEN_LEVELSELECT  2
+#define SCREEN_GAME         3
+#define SCREEN_NEXTLEVEL    4
+
+///////////////////////
+// VARIÁVEIS GLOBAIS //
+///////////////////////
+
+std::map<string, SceneObject> g_VirtualScene;
+std::stack<glm::mat4>  g_MatrixStack;
+// Vetor que contém dados sobre os objetos dentro do mapa (usado para tratar colisões)
+std::vector<MapObject> map_objects;
+// Vetor de articulas
+std::vector<Particle> particles;
+
 // Razão de proporção da janela (largura/altura).
 float g_ScreenRatio = 1.0f;
 int g_WindowWidth = 800, g_WindowHeight = 600;
-
-// Ângulos de Euler
-float g_AngleX = 0.0f;
-float g_AngleY = 0.0f;
-float g_AngleZ = 0.0f;
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = false;
+
+// Variável de controle da câmera
+bool g_useFirstPersonCamera = false;
+
+// Variáveis de controle de sons
+bool g_MusicOn = true;
+bool g_SoundsOn = true;
+
+// Variáveis de controle do cursor
+double g_LastCursorPosX, g_LastCursorPosY;
+
+// Variável de controle do botão esquerdo do mouse.
+bool g_LeftMouseButtonPressed = false;
+
+// Variável de controle da tela atual (menu principal, level select, jogo, etc)
+int g_CurrentScreen = SCREEN_MAINMENU;
+
+// Angulos de rotação dos itens
+// utilizado para controlar a rotação dos itens
+float g_ItemAngleY = 0.0f;
+
+// Variável de controle de encerramento de nível
+bool g_MapEnded = false;
+
+// Variáveis de controle das teclas
+bool key_w_pressed = false;
+bool key_a_pressed = false;
+bool key_s_pressed = false;
+bool key_d_pressed = false;
+bool key_space_pressed = false;
+bool esc_pressed = false;
 
 // Variáveis de posição do jogador
 vec4 player_position;
@@ -260,49 +308,21 @@ float g_CameraDistance = 2.5f; // Distância da câmera para a origem.
 vec4 camera_lookat_l;
 
 // CÂMERA FIRST PERSON
-vec4 camera_position_c  = vec4(player_position[0], player_position[1] + 0.6f, player_position[2], 1.0f); // Ponto "c", centro da câmera
+vec4 camera_position_c  = player_position; // Ponto "c", centro da câmera
 vec4 camera_xz_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f); // Vetor que representa para onde a câmera aponta (Sem levar em conta o eixo y)
 vec4 camera_view_vector = camera_xz_direction; // Vetor "view", sentido para onde a câmera está virada
 vec4 camera_up_vector   = vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
 
-// Variável de controle da câmera
-bool g_useFirstPersonCamera = false;
-
-// Variáveis de controle do cursor
-double g_LastCursorPosX, g_LastCursorPosY;
-
-// Variável de controle do botão esquerdo do mouse.
-bool g_LeftMouseButtonPressed = false;
-
-// Variáveis de controle das teclas de movimentação
-bool key_w_pressed = false;
-bool key_a_pressed = false;
-bool key_s_pressed = false;
-bool key_d_pressed = false;
-bool key_space_pressed = false;
-
-bool esc_pressed = false;
-
-int current_screen = 0;
-int menu_position = 0;
-
-// Angulos de rotação dos itens
-float item_angle_y = 0;
-
-// Particulas
-std::vector<Particle> particles;
-
 // Inventário do jogador
-vecInt collected_keys = {0,0,0,0}; // red, green, blue, yellow
-int collected_babies = 0;
-int level_babies;
-bool endmap = false;
+Inventory player_inventory;
+
+// Número de vacas em um nível
+int g_LevelCowAmount;
 
 // Variáveis de animações de mortes
-bool death_by_water = false;
-bool death_by_enemy = false;
-int death_timer = 1000;
+bool g_DeathByWater = false;
+bool g_DeathByEnemy = false;
 
 // Sons
 sf::SoundBuffer menucursorsound;
@@ -315,6 +335,14 @@ sf::SoundBuffer ball1sound;
 sf::SoundBuffer deathsound;
 sf::SoundBuffer winsound;
 sf::Sound       sound;
+
+// Música
+sf::Music menumusic;
+sf::Music techmusic;
+sf::Music watermusic;
+sf::Music naturemusic;
+sf::Music spookymusic;
+sf::Music spacemusic;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -331,6 +359,107 @@ GLint yellow_particle_color_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
+
+// Carrega um arquivo de som
+void LoadSoundFromFile(const char* path, sf::SoundBuffer * buffer) {
+    printf("Carregando som \"%s\"... ", path);
+    if (!buffer->loadFromFile(path)) {
+        printf("Falha ao carregar som!\n");
+        std::exit(EXIT_FAILURE);
+    }
+    else printf(" OK!\n");
+}
+
+// Carrega um arquivo de música
+void LoadMusicFromFile(const char* path, sf::Music * buffer) {
+    printf("Carregando música \"%s\"... ", path);
+    if (!buffer->openFromFile(path)) {
+        printf("Falha ao carregar música!\n");
+        std::exit(EXIT_FAILURE);
+    }
+    else {
+        printf(" OK!\n");
+        buffer->setLoop(true);
+    }
+}
+
+// Toca a música de um nível
+void PlayLevelMusic(int level_number) {
+    if (!g_MusicOn)
+        return;
+
+    menumusic.stop();
+    switch(level_number){
+        case 1:
+        case 2:{
+            techmusic.play();
+            break;
+        }
+        case 3:
+        case 5:{
+            naturemusic.play();
+            break;
+        }
+        case 4:
+        case 9:{
+            watermusic.play();
+            break;
+        }
+        case 6:
+        case 8:{
+            spookymusic.play();
+            break;
+        }
+        case 7:
+        case 10:{
+            spacemusic.play();
+            break;
+        }
+    }
+}
+
+// Toca a música do menu
+void PlayMenuMusic() {
+    if (!g_MusicOn)
+        return;
+
+    if (techmusic.getStatus() == 2)
+        techmusic.stop();
+    if (naturemusic.getStatus() == 2)
+        naturemusic.stop();
+    if (watermusic.getStatus() == 2)
+        watermusic.stop();
+    if (spacemusic.getStatus() == 2)
+        spacemusic.stop();
+    if (spookymusic.getStatus() == 2)
+        spookymusic.stop();
+    menumusic.play();
+}
+
+// Para todas as músicas
+void StopAllMusic() {
+    if (techmusic.getStatus() == 2)
+        techmusic.stop();
+    if (naturemusic.getStatus() == 2)
+        naturemusic.stop();
+    if (watermusic.getStatus() == 2)
+        watermusic.stop();
+    if (spacemusic.getStatus() == 2)
+        spacemusic.stop();
+    if (spookymusic.getStatus() == 2)
+        spookymusic.stop();
+    if (menumusic.getStatus() == 2)
+        menumusic.stop(); 
+}
+
+// Toca um som
+void PlaySound(sf::SoundBuffer * buffer) {
+    if (!g_SoundsOn)
+        return;
+
+    sound.setBuffer(*buffer);
+    sound.play();
+}
 
 int main(int argc, char* argv[])
 {
@@ -368,7 +497,7 @@ int main(int argc, char* argv[])
     PrintGPUInfoInTerminal();
     LoadShadersFromFiles();
 
-    // Carregamos imagens para serem utilizadas como textura
+    // Carregamento de imagens
     LoadTextureImage("../../data/textures/ground.png"); 			// TextureImage0
     LoadTextureImage("../../data/textures/wall.png");   			// TextureImage1
     LoadTextureImage("../../data/textures/wall.png");    			// TextureImage2
@@ -380,7 +509,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage8
     LoadTextureImage("../../data/textures/wallgroundgrass.png");    // TextureImage9
 
-    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    // Carregamento de models
     ObjModel spheremodel("../../data/objects/sphere.obj");
     ComputeNormals(&spheremodel);
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
@@ -409,139 +538,24 @@ int main(int argc, char* argv[])
     ComputeNormals(&jetmodel);
     BuildTrianglesAndAddToVirtualScene(&jetmodel);
 
-    // Sounds
-    const char* menucursorsoundpath = "../../data/sound/menucursor.wav";
-    printf("Carregando som \"%s\" ... ", menucursorsoundpath);
-    if (!menucursorsound.loadFromFile(menucursorsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
+    // Carregamento de sons
+    LoadSoundFromFile("../../data/sound/menucursor.wav", &menucursorsound);
+    LoadSoundFromFile("../../data/sound/menuenter.wav", &menuentersound);
+    LoadSoundFromFile("../../data/sound/key.wav", &keysound);
+    LoadSoundFromFile("../../data/sound/cow.wav", &cowsound);
+    LoadSoundFromFile("../../data/sound/door.wav", &doorsound);
+    LoadSoundFromFile("../../data/sound/splash.wav", &splashsound);
+    LoadSoundFromFile("../../data/sound/ball1.wav", &ball1sound);
+    LoadSoundFromFile("../../data/sound/death.wav", &deathsound);
+    LoadSoundFromFile("../../data/sound/win.wav", &winsound);
 
-    const char* menuentersoundpath = "../../data/sound/menuenter.wav";
-    printf("Carregando som \"%s\" ... ", menuentersoundpath);
-    if (!menuentersound.loadFromFile(menuentersoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* keysoundpath = "../../data/sound/key.wav";
-    printf("Carregando som \"%s\" ... ", keysoundpath);
-    if (!keysound.loadFromFile(keysoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* cowsoundpath = "../../data/sound/cow.wav";
-    printf("Carregando som \"%s\" ... ", cowsoundpath);
-    if (!cowsound.loadFromFile(cowsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* doorsoundpath = "../../data/sound/door.wav";
-    printf("Carregando som \"%s\" ... ", doorsoundpath);
-    if (!doorsound.loadFromFile(doorsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* splashsoundpath = "../../data/sound/splash.wav";
-    printf("Carregando som \"%s\" ... ", splashsoundpath);
-    if (!splashsound.loadFromFile(splashsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* ball1soundpath = "../../data/sound/ball1.wav";
-    printf("Carregando som \"%s\" ... ", ball1soundpath);
-    if (!ball1sound.loadFromFile(ball1soundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* deathsoundpath = "../../data/sound/death.wav";
-    printf("Carregando som \"%s\" ... ", deathsoundpath);
-    if (!deathsound.loadFromFile(deathsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    const char* winsoundpath = "../../data/sound/win.wav";
-    printf("Carregando som \"%s\" ... ", winsoundpath);
-    if (!winsound.loadFromFile(winsoundpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-
-    // Music
-    sf::Music menumusic;
-    const char* menumusicpath = "../../data/music/velapax.ogg";
-    printf("Carregando música \"%s\" ... ", menumusicpath);
-    if (!menumusic.openFromFile(menumusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    menumusic.setLoop(true);
-
-    sf::Music techmusic;
-    const char* techmusicpath = "../../data/music/landingbase.ogg";
-    printf("Carregando música \"%s\" ... ", techmusicpath);
-    if (!techmusic.openFromFile(techmusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    techmusic.setLoop(true);
-
-    sf::Music watermusic;
-    const char* watermusicpath = "../../data/music/highway.ogg";
-    printf("Carregando música \"%s\" ... ", watermusicpath);
-    if (!watermusic.openFromFile(watermusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    watermusic.setLoop(true);
-
-    sf::Music naturemusic;
-    const char* naturemusicpath = "../../data/music/strshine.ogg";
-    printf("Carregando música \"%s\" ... ", naturemusicpath);
-    if (!naturemusic.openFromFile(naturemusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    naturemusic.setLoop(true);
-
-    sf::Music spookymusic;
-    const char* spookymusicpath = "../../data/music/losses.ogg";
-    printf("Carregando música \"%s\" ... ", spookymusicpath);
-    if (!spookymusic.openFromFile(spookymusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    spookymusic.setLoop(true);
-
-    sf::Music spacemusic;
-    const char* spacemusicpath = "../../data/music/lax_here.ogg";
-    printf("Carregando música \"%s\" ... ", spacemusicpath);
-    if (!spacemusic.openFromFile(spacemusicpath)) {
-        printf("Falha ao carregar!\n");
-        return -1;
-    }
-    printf(" OK!\n");
-    spacemusic.setLoop(true);
+    // Carregamento de música
+    LoadMusicFromFile("../../data/music/velapax.ogg", &menumusic);
+    LoadMusicFromFile("../../data/music/landingbase.ogg", &techmusic);
+    LoadMusicFromFile("../../data/music/highway.ogg", &watermusic);
+    LoadMusicFromFile("../../data/music/strshine.ogg", &naturemusic);
+    LoadMusicFromFile("../../data/music/losses.ogg", &spookymusic);
+    LoadMusicFromFile("../../data/music/lax_here.ogg", &spacemusic);
 
     if ( argc > 1 )
     {
@@ -560,72 +574,48 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    // Habilitamos blending, para colocar transparência em objetos (em testes)
     glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	menumusic.play();
+    // Inicializações para o menu
+	PlayMenuMusic();
+    g_CurrentScreen = SCREEN_MAINMENU;
+    int current_level = 1;
 
-    current_screen = 1;
-    int curlevel = 1;
-
-    while (current_screen > 0) {
+    // Rodamos o jogo até que o jogador peça para sair
+    while (g_CurrentScreen > 0) {
     	// Main menu
-    	if (current_screen == 1)
-    		current_screen = RenderMainMenu(window);
+    	if (g_CurrentScreen == SCREEN_MAINMENU)
+    		g_CurrentScreen = RenderMainMenu(window);
 
     	// Render level
-    	if (current_screen == 2) {
-            menumusic.stop();
-            switch(curlevel){
-            case 1:
-            case 2:{
-                techmusic.play();
-                break;
-            }
-            case 3:
-            case 5:{
-                naturemusic.play();
-                break;
-            }
-            case 4:
-            case 9:{
-                watermusic.play();
-                break;
-            }
-            case 6:
-            case 8:{
-                spookymusic.play();
-                break;
-            }
-            case 7:
-            case 10:{
-                spacemusic.play();
-                break;
-            }
-            }
-    		current_screen = RenderLevel(curlevel, window);
-    		if ((current_screen <= 3 && current_screen >= 2) || curlevel != 1) {
-                techmusic.stop();
-                naturemusic.stop();
-                watermusic.stop();
-                spacemusic.stop();
-                spookymusic.stop();
-                menumusic.play();
-            }
+    	if (g_CurrentScreen == SCREEN_GAME) {
+            PlayLevelMusic(current_level);
+    		g_CurrentScreen = RenderLevel(current_level, window);
+    		if ((g_CurrentScreen != SCREEN_GAME && g_CurrentScreen != SCREEN_NEXTLEVEL) || current_level != 1)
+                PlayMenuMusic();
         }
 
     	// Next level
-    	if (current_screen == 3) {
-    		curlevel++;
-    		current_screen = 2;
+    	if (g_CurrentScreen == SCREEN_NEXTLEVEL) {
+    		current_level++;
+    		g_CurrentScreen = SCREEN_GAME;
     	}
 
     	// Select level
-    	if (current_screen == 4) {
-    		curlevel = RenderLevelSelection(window);
-    		current_screen = 2;
+    	if (g_CurrentScreen == SCREEN_LEVELSELECT) {
+    		current_level = RenderLevelSelection(window);
+            if (current_level > 0)
+    		  g_CurrentScreen = SCREEN_GAME;
+            else {
+                current_level = 1;
+                g_CurrentScreen = SCREEN_MAINMENU;
+            }
     	}
     }
+
+    StopAllMusic();
 
     // Finalizamos o uso dos recursos do sistema operacional
     glfwTerminate();
@@ -634,73 +624,79 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+// Renderiza menu principal
 int RenderMainMenu(GLFWwindow* window) {
+    // Câmera fixa e presets
 	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	camera_view_vector = camera_lookat_l - camera_position_c;
-	menu_position = 0;
+    key_space_pressed = false;
+    int menu_position = 0;
 
+    // Renderizamos até retornar
 	while(true) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program_id);
 
+        // Strings
         string newgame_text = "NEW GAME";
         string selectlevel_text = "SELECT LEVEL";
         string exit_text = "EXIT GAME";
 
+        // Rotação/animação da vaca
+        g_ItemAngleY += ITEM_ROTATION_SPEED;
+        if (g_ItemAngleY >= 2*PI)
+            g_ItemAngleY = 0;
+
+        // Movimentação do menu
         if (key_w_pressed and menu_position > 0) {
         	menu_position--;
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
+        	PlaySound(&menucursorsound);
         	key_w_pressed = false;
         }
 
         if (key_s_pressed and menu_position < 2) {
         	menu_position++;
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
+        	PlaySound(&menucursorsound);
         	key_s_pressed = false;
         }
 
         if (key_space_pressed) {
-            sound.setBuffer(menuentersound);
-        	sound.play();
+            PlaySound(&menuentersound);
         	switch(menu_position) {
-        	case 0: return 2;
-        	case 1: return 4;
-        	case 2: return 0;
+        	case 0: return SCREEN_GAME;
+        	case 1: return SCREEN_LEVELSELECT;
+        	case 2: return SCREEN_EXIT;
         	}
         }
 
-        item_angle_y += ITEM_ROTATION_SPEED;
-		if (item_angle_y >= 2*PI)
-			item_angle_y = 0;
-
+        // Câmera
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -20.0f; // Posição do "far plane"
 
-        // Projeção Ortográfica.
+        // Menu utiliza projeção ortográfica (para visualizar a vaca)
         float t = 1.5f*g_CameraDistance/2.5f;
         float b = -t;
         float r = t*g_ScreenRatio;
         float l = -r;
         projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-    	glm::mat4 model = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
+        // Desenhamos a vaca
+    	glm::mat4 cowmodel = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
         	* Matrix_Scale(0.1f, 0.1f, 0.1f)
         	* Matrix_Translate(-0.2f, 0.0f, 0.0f)
-        	* Matrix_Rotate_Y(item_angle_y)
+        	* Matrix_Rotate_Y(g_ItemAngleY)
         	* Matrix_Translate(0.2f, 0.0f, 0.0f);
-        DrawVirtualObject("cow", BABYCOW, model);
+        DrawVirtualObject("cow", BABYCOW, cowmodel);
 
+        // Imprimimos o texto
+        // Caso o texto esteja selecionado, ele fica maior.
         if (menu_position == 0)
         	TextRendering_PrintString(window, newgame_text, -0.2f, 0.1f, 2.5f);
         else TextRendering_PrintString(window, newgame_text, -0.2f, 0.1f, 2.0f);
@@ -713,9 +709,9 @@ int RenderMainMenu(GLFWwindow* window) {
         	TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.5f);
         else TextRendering_PrintString(window, exit_text, -0.2f, -0.3f, 2.0f);
 
-        if (g_ShowInfoText) {
+        // FPS
+        if (g_ShowInfoText)
             TextRendering_ShowFramesPerSecond(window);
-        }
 
         glfwSwapBuffers(window);
         // Verificação de eventos
@@ -724,54 +720,61 @@ int RenderMainMenu(GLFWwindow* window) {
 	return -1;
 }
 
+// Renderiza tela de seleção de níveis
 int RenderLevelSelection(GLFWwindow* window) {
+    // Câmera fixa e presets
 	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	camera_view_vector = camera_lookat_l - camera_position_c;
-	menu_position = 0;
-	int chosen_level = 1;
-	bool choosing_level = false;
 	key_space_pressed = false;
+    int menu_position = 0;
+    int chosen_level = 1;
+    bool choosing_level = false; 
 
+    // Renderizamos até retornar
 	while(true) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program_id);
 
+        // Strings
+        string enterlevel_text = "ENTER LEVEL: ";
+        string lvtext[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
+        string go_text = "GO!";
+
+        // Animação da vaca
+        g_ItemAngleY += ITEM_ROTATION_SPEED;
+        if (g_ItemAngleY >= 2*PI)
+            g_ItemAngleY = 0;
+
+        // Se o usuário aperta esc, volta para o menu anterior
         if (esc_pressed) {
-            sound.setBuffer(menuentersound);
-        	sound.play();
-        	return 1;
+            PlaySound(&menuentersound);
+        	return 0;
         }
 
-        if ((key_w_pressed and menu_position > 0) && !choosing_level) {
-        	menu_position--;
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
-        	key_w_pressed = false;
-        } else if (key_w_pressed && choosing_level) {
-        	chosen_level = std::max(chosen_level-1, 1);
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
-        	key_w_pressed = false;
+        // Movimentação do menu
+        if (key_w_pressed) {
+            PlaySound(&menucursorsound);
+            key_w_pressed = false;
+            if (choosing_level)
+                chosen_level = std::max(chosen_level-1, 1);
+            else if (menu_position > 0)
+                menu_position--;
         }
 
-        if ((key_s_pressed and menu_position < 1) && !choosing_level) {
-        	menu_position++;
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
-        	key_s_pressed = false;
-        } else if (key_s_pressed && choosing_level) {
-        	chosen_level = std::min(chosen_level+1, 10);
-        	sound.setBuffer(menucursorsound);
-        	sound.play();
-        	key_s_pressed = false;
+        if (key_s_pressed) {
+            PlaySound(&menucursorsound);
+            key_s_pressed = false;
+            if (choosing_level)
+                chosen_level = std::min(chosen_level+1, 10);
+            else if (menu_position < 1)
+                menu_position++;
         }
 
         if (key_space_pressed) {
-            sound.setBuffer(menuentersound);
-        	sound.play();
+            PlaySound(&menuentersound);
         	key_space_pressed = false;
         	switch(menu_position) {
         	case 0: {
@@ -782,37 +785,28 @@ int RenderLevelSelection(GLFWwindow* window) {
         	}
         }
 
-        item_angle_y += ITEM_ROTATION_SPEED;
-		if (item_angle_y >= 2*PI)
-			item_angle_y = 0;
-
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -20.0f; // Posição do "far plane"
 
-        // Projeção Ortográfica.
+        // Projeção Ortográfica
         float t = 1.5f*g_CameraDistance/2.5f;
         float b = -t;
         float r = t*g_ScreenRatio;
         float l = -r;
         projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-    	glm::mat4 model = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
+    	glm::mat4 cowmodel = Matrix_Translate(1.0f, 0.21f - menu_position * 0.3f, -0.45f)
         	* Matrix_Scale(0.1f, 0.1f, 0.1f)
         	* Matrix_Translate(-0.2f, 0.0f, 0.0f)
-        	* Matrix_Rotate_Y(item_angle_y)
+        	* Matrix_Rotate_Y(g_ItemAngleY)
         	* Matrix_Translate(0.2f, 0.0f, 0.0f);
-        DrawVirtualObject("cow", BABYCOW, model);
+        DrawVirtualObject("cow", BABYCOW, cowmodel);
 
-        string enterlevel_text = "ENTER LEVEL: ";
-        string lvtext[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
-        string go_text = "GO!";
-
+        // Escrita dos textos na tela
         if(menu_position == 0 && !choosing_level)
         	TextRendering_PrintString(window, enterlevel_text, -0.2f, 0.1f, 2.5f);
         else TextRendering_PrintString(window, enterlevel_text, -0.2f, 0.1f, 2.0f);
@@ -825,9 +819,9 @@ int RenderLevelSelection(GLFWwindow* window) {
         	TextRendering_PrintString(window, go_text, -0.2f, -0.05f, 2.5f);
         else TextRendering_PrintString(window, go_text, -0.2f, -0.05f, 2.0f);
 
-        if (g_ShowInfoText) {
+        // FPS
+        if (g_ShowInfoText)
             TextRendering_ShowFramesPerSecond(window);
-        }
 
         glfwSwapBuffers(window);
         // Verificação de eventos
@@ -836,31 +830,35 @@ int RenderLevelSelection(GLFWwindow* window) {
 	return -1;
 }
 
+vec4 AdjustFPSCamera(vec4 position) {
+    return vec4(position.x, position.y + 0.5f, position.z, 1.0f);
+}
+
 int RenderLevel(int level_number, GLFWwindow* window) {
 	// Reset variables
-	item_angle_y = 0;
+    map_objects.clear();
 	particles.clear();
-	for(int i=0; i<4; i++)
-		collected_keys[i] = 0;
-	collected_babies = 0;
-	endmap = false;
-	death_by_water = false;
-	death_by_enemy = false;
-	death_timer = 1000;
-	map_objects.clear();
+	ClearInventory();
+	g_MapEnded = false;
+	g_DeathByWater = false;
+	g_DeathByEnemy = false;
+    g_ItemAngleY = 0;
 	g_useFirstPersonCamera = false;
+
+    // Variável de controle da animação de morte
+    int death_timer = 1000;
+
+    // Variável de controle de animação dos tiles
+    int curr_anim_tile = 0;
+    int anim_timer = 0;
 
     // Carrega nível um
     string levelpath = "../../data/levels/" + std::to_string(level_number);
     Level level = LoadLevelFromFile(levelpath);
     RegisterLevelObjects(level);
-    level_babies = level.babies;
+    g_LevelCowAmount = level.cow_no;
     player_position = GetPlayerSpawnCoordinates(level.plant);
     camera_lookat_l = player_position;
-
-    // Variável de controle de animação
-    int curr_anim_tile = 0;
-    int anim_timer = 0;
 
     // Ficamos em loop, renderizando
     while (true)
@@ -870,38 +868,20 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 
         glUseProgram(program_id);
 
+        // Retorno para tela inicial
         if(esc_pressed)
-        	return 1;
-
-        if(endmap) {
-        	return 3;
+        	return SCREEN_MAINMENU;
+        if(g_MapEnded) {
+        	return SCREEN_NEXTLEVEL;
         }
-
-        // Movimentação do personagem
-        if (death_by_water) {
-        	player_position[1] -= 0.01f;
-        	death_timer -= 10;
-        	if (death_timer <= 0) {
-        		death_by_water = false;
-        		death_timer = 1000;
-				return 2;
-        	}
-        }
-        else if (death_by_enemy) {
-        	death_timer -= 10;
-        	if (death_timer <= 0) {
-        		death_by_enemy = false;
-        		death_timer = 1000;
-        		return 2;
-        	}
-        }
-        else MovePlayer();
 
         // Controle do tipo de câmera
         if (g_useFirstPersonCamera) {
-            camera_position_c = player_position;
+            // First-person
+            camera_position_c = AdjustFPSCamera(player_position);
         }
         else {
+            // LookAt (third-person)
             float r = g_CameraDistance;
             float y = r*sin(g_CameraPhi);
             float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
@@ -913,6 +893,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
             camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector);
         }
 
+        // Vetor direção da câmera do plano XZ
         camera_xz_direction = vec4(camera_view_vector[0] + 0.01f, 0.0f, camera_view_vector[2] + 0.01f, 0.0f);
 
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
@@ -923,8 +904,6 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         // Projeção perspectiva
         float field_of_view = 3.141592 / 3.0f;
         projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
@@ -932,56 +911,72 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         // JOGADOR //
         /////////////
 
+        // Movimentação do personagem e animações de morte
+        if (g_DeathByWater || g_DeathByEnemy) {
+            death_timer -= 10;
+            if (death_timer <= 0) {
+                g_DeathByEnemy = false;
+                g_DeathByWater = false;
+                death_timer = 1000;
+                return SCREEN_GAME;
+            }
+            if (g_DeathByWater)
+                player_position[1] -= 0.01f;
+        }           
+        else MovePlayer();
+
+        // Ajusta vetores de direção
         straight_vector = straight_vector_sign * camera_xz_direction;
     	sideways_vector = sideways_vector_sign * camera_u_vector;
     	player_direction = straight_vector + sideways_vector;
 
-        float vecangle = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
+        // Ajusta ângulo para onde o corpo do boneco está virado
+        float bodyangle_Y = acos(dotproduct(player_direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(player_direction));
         if (player_direction[2] > 0.0f)
-            vecangle = -vecangle;
-        DrawPlayer(player_position[0], player_position[1] - 0.3f, player_position[2], vecangle + PI/2, 0.3f);
+            bodyangle_Y = -bodyangle_Y;
+        float bodyangle_X = 0.0f;
+        if (g_DeathByEnemy)
+            bodyangle_X = MaxFloat2(death_timer * 0.002f - 2.0f, -PI/2);
 
-        if (CollidedWithEnemy(GetObjectsCollidingWithPlayer(player_position))) {
-        	death_by_enemy = true;
-        }
+        // Desenha player
+        DrawPlayer(player_position, bodyangle_Y + PI/2, bodyangle_X, 0.3f);
+
+        if (CollidedWithEnemy(GetObjectsCollidingWithPlayer(player_position)))
+        	g_DeathByEnemy = true;
 
         ///////////////////
         // RESTO DO MAPA //
         ///////////////////
 
-        DrawMapObjects();
+        DrawMapObjects(); // Desenha
+        MoveEnemies();    // Movimenta inimigos
+
+        ///////////////
+        // ANIMAÇÕES //
+        ///////////////
 
         // Animação dos tiles (todos são animados em simetria)
         // CASO DESEJA-SE ANIMÁ-LOS DE FORMA INDEPENDENTE, deve-se
         // copiar este trecho para cada switch na função de renderização.
-        anim_timer++;
-        if (anim_timer >= ANIMATION_SPEED) {
-        	anim_timer = 0;
-        	curr_anim_tile++;
-        	if (curr_anim_tile == 4)
-        		curr_anim_tile = 0;
-        }
+        anim_timer = (anim_timer + 1) % ANIMATION_SPEED;
+        if (anim_timer == 0) 
+        	curr_anim_tile = (curr_anim_tile+1) % 4;
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
 		// Rotação dos itens
-		item_angle_y += ITEM_ROTATION_SPEED;
-		if (item_angle_y >= 2*PI)
-			item_angle_y = 0;
+		g_ItemAngleY += ITEM_ROTATION_SPEED;
+		if (g_ItemAngleY >= 2*PI)
+			g_ItemAngleY = 0;
 
 		// Fogo: partículas
 		AnimateParticles();
 
-		// Movimenta inimigos
-		MoveEnemies();
+        // Mostra inventário na tela
+        ShowInventory(window); 
 
-		// Mostra itens na tela
-		ShowInventory(window);
-
-        if (g_ShowInfoText) {
-            TextRendering_ShowEulerAngles(window);
-            TextRendering_ShowProjection(window);
+        // FPS
+        if (g_ShowInfoText) 
             TextRendering_ShowFramesPerSecond(window);
-        }
 
         glfwSwapBuffers(window);
         // Verificação de eventos
@@ -990,6 +985,24 @@ int RenderLevel(int level_number, GLFWwindow* window) {
     return -1;
 }
 
+// Função que verifica se um valor está dentro de um conjunto de valores
+// Útil para simplificar ifs
+template <typename T>
+bool isIn(const T& val, const std::initializer_list<T>& list) {
+    for (const auto& i : list) {
+        if (val == i) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Retorna o maior valor (float) dentre dois valores
+float MaxFloat2(float a, float b) {
+    if (a < b)
+        return b;
+    else return a;
+}
 
 // Converte um vetor para coordenadas homogêneas
 vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
@@ -998,32 +1011,35 @@ vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
 	else return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 0.0f);
 }
 
-// Dado um objeto, retorna as coordenadas onde ele "começa"
+// Dado um objeto e seu tamanho, retorna as coordenadas onde ele "começa"
+// Necessário pois os objetos do jogo contém a posição central deles
 vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
 	return object_position - VectorSetHomogeneous(object_size, false) / 2.0f;
 }
 
-// Dado um objeto, retorna as coordenadas onde ele "termina"
-vec4 GetObjectBottomBoundary(vec4 object_position, vec3 object_size) {
-	return object_position + VectorSetHomogeneous(object_size, false) / 2.0f;
-}
-
+// Mostra o inventário do jogador na tela
 void ShowInventory(GLFWwindow* window) {
 	float pad = TextRendering_LineHeight(window);
 
-	string invstring = "REQUIRED COWS: " + std::to_string(level_babies - collected_babies) + " KEYS: ";
-	if (collected_keys[0]) invstring += "R ";
+	string invstring = "REQUIRED COWS: " + std::to_string(g_LevelCowAmount - player_inventory.cows) + " KEYS: ";
+	if (player_inventory.keys.red) invstring += "R ";
 	else invstring += "  ";
-	if (collected_keys[1]) invstring += "G ";
+	if (player_inventory.keys.green) invstring += "G ";
 	else invstring += "  ";
-	if (collected_keys[2]) invstring += "B ";
+	if (player_inventory.keys.blue) invstring += "B ";
 	else invstring += "  ";
-	if (collected_keys[3]) invstring += "Y";
-	else invstring += " ";
+	if (player_inventory.keys.yellow) invstring += "Y";
+	else invstring += "  ";
+    invstring += "TIME: ";
 
     TextRendering_PrintString(window, invstring, -1.0f+pad/5, 1.0f-pad, 1.0f);
 }
 
+///////////////////////////
+// SISTEMA DE PARTÍCULAS //
+///////////////////////////
+
+// Animação
 void AnimateParticles() {
 	vecInt particles_to_delete;
 
@@ -1039,6 +1055,7 @@ void AnimateParticles() {
 	}
 }
 
+// Geração
 void GenerateParticles(int amount, vec4 position, vec3 object_size) {
 	for (int i = 0; i < amount; i++) {
 		Particle new_particle;
@@ -1059,6 +1076,8 @@ void GenerateParticles(int amount, vec4 position, vec3 object_size) {
 	}
 }
 
+// Desenho
+// Talvez precisamos mudar isso.
 void DrawParticles() {
 	glDisable(GL_CULL_FACE);
 	for(unsigned int i = 0; i < particles.size(); i++) {
@@ -1091,38 +1110,46 @@ void RegisterLevelObjects(Level level) {
 // CASO SE QUEIRA ADICIONAR NOVOS OBJETOS, DEVE-SE FAZÊ-LO AQUI
 void RegisterObjectInMapVector(char tile_type, float x, float z) {
     /* Propriedades de objetos (deslocamento, tamanho, etc) */
-    // Dimensões
+
+    // Cubo (genérico)
     vec3 cube_size = vec3(1.0f, 1.0f, 1.0f);
     float cube_vertical_shift = -0.5f;
 
+    // Blocos de terra
     vec3 dirtblock_size = vec3(0.8f, 0.8f, 0.8f);
     float dirtblock_vertical_shift = -0.6f;
 
-    vec3 key_size = vec3(0.1f, 0.1f, 0.1f);
+    // Chaves
+    vec3 keymodel_size = vec3(0.1f, 0.1f, 0.1f);
     float key_vertical_shift = -1.0f;
+    vec3 key_size = vec3(0.5f, 0.5f, 0.5f);
 
+    // Vaca mãe
     vec3 cow_size = vec3(0.7f, 0.7f, 0.7f);
     float cow_vertical_shift = -0.5f;
 
+    // Vaca bebê (a ser coletada)
     vec3 babycow_size = vec3(0.35f, 0.35f, 0.35f);
     float babycow_vertical_shift = -0.5f;
 
+    // Jet
     vec3 jetmodel_size = vec3(0.03f, 0.03f, 0.03f);
     vec3 jet_size = vec3(0.8f, 0.8f, 0.8f);
     float jet_vertical_shift = -0.5f;
 
+    // Esfera e bolas
     vec3 sphere_size = vec3(0.4f, 0.4f, 0.4f);
     vec3 ball_size = vec3(0.8f, 0.8f, 0.8f);
     float sphere_vertical_shift = -0.5f;
 
-    // Tile plano
+    // Tiles planos (chão, água, grama, etc)
     vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
     vec3 planemodel_size = vec3(1.0f, 1.0f, 1.0f);
     float floor_shift = -1.0f;
 
     /* Adicione novos tipos de objetos abaixo */
     switch(tile_type) {
-    // Cubo
+    // Parede
     case 'B': {
         RegisterObjectInMap(WALL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         break;
@@ -1134,7 +1161,7 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
         break;
     }
 
-    // Porta vermelha:
+    // Fogo:
     case 'f':{
         RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
@@ -1156,28 +1183,28 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
 
     // Chave vermelha
     case 'r':{
-    	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
     // Chave verde
     case 'g':{
-    	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave azul
     case 'b':{
-    	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave amarela
     case 'y':{
-    	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", key_size);
+    	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
@@ -1271,53 +1298,43 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
 void DrawMapObjects() {
     for(unsigned int i = 0; i < map_objects.size(); i++) {
         MapObject current_object = map_objects[i];
-        glm::mat4 model;
         int obj_type = current_object.object_type;
+        glm::mat4 model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
+                        * Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z);
 
-        if ((obj_type == KEY_RED) || (obj_type == KEY_GREEN) || (obj_type == KEY_BLUE) || (obj_type == KEY_YELLOW)) {
-        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
-        		* Matrix_Translate(0.0f, 5.7f, 0.0f)
-        		* Matrix_Rotate_Y(item_angle_y)
+        // Aplica rotações dependendo do objeto (animações, inimigos, etc)
+        if (isIn(obj_type, {KEY_RED, KEY_GREEN, KEY_BLUE, KEY_YELLOW})) {
+        	model = model * Matrix_Translate(0.0f, 5.7f, 0.0f)
+        		* Matrix_Rotate_Y(g_ItemAngleY)
         		* Matrix_Rotate_Z(PI/5)
         		* Matrix_Translate(0.0f, -5.7f, 0.0f);
         } else if (obj_type == BABYCOW) {
-    		model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
-        		* Matrix_Translate(-0.2f, 0.0f, 0.0f)
-        		* Matrix_Rotate_Y(item_angle_y)
+    		model = model * Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        		* Matrix_Rotate_Y(g_ItemAngleY)
         		* Matrix_Translate(0.2f, 0.0f, 0.0f);
         } else if (obj_type == FIRE) {
         	GenerateParticles(5, current_object.object_position, current_object.model_size);
         	DrawParticles();
         } else if (obj_type == JET) {
-        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z)
-        		* Matrix_Translate(-0.2f, 0.0f, 0.0f)
+        	model = model * Matrix_Translate(-0.2f, 0.0f, 0.0f)
         		* Matrix_Rotate_Y(current_object.direction * PI/2)
         		* Matrix_Translate(0.2f, 0.0f, 0.0f);
-   		} else {
-        	model = Matrix_Translate(current_object.object_position.x, current_object.object_position.y, current_object.object_position.z)
-        		* Matrix_Scale(current_object.model_size.x, current_object.model_size.y, current_object.model_size.z);
-        }
+   		}
 
         DrawVirtualObject(current_object.obj_file_name, current_object.object_type, model);
     }
 }
 
-float maxfloat(float a, float b) {
-	if (a < b)
-		return b;
-	else return a;
-}
-
 // Função que desenha o jogador usando transformações hierárquicas
 // Desenha na posição dada, com escala dada e ângulo de rotação dado
-void DrawPlayer(float x, float y, float z, float angle_y, float scale) {
+void DrawPlayer(vec4 position, float angle_y, float angle_x, float scale) {
+    float x = position.x;
+    float y = position.y + 0.2f; // Shift vertical do player
+    float z = position.z;
     glm::mat4 model = Matrix_Identity();
 
     model = Matrix_Translate(x, y, z) * Matrix_Rotate_Y(angle_y);
-    if (death_by_enemy) model = model * Matrix_Translate(0.0f, -0.6f, 0.0f) * Matrix_Rotate_X(maxfloat(death_timer * 0.002f - 2.0f, -PI/2)) * Matrix_Translate(0.0f, 0.6f, 0.0f);
+    model = model * Matrix_Translate(0.0f, -0.6f, 0.0f) * Matrix_Rotate_X(angle_x) * Matrix_Translate(0.0f, 0.6f, 0.0f);
     PushMatrix(model);
         model = model * Matrix_Scale(0.8f * scale, 1.1f * scale, 0.2f * scale);
         DrawVirtualObject("cube", PLAYER_TORSO, model);
@@ -1432,7 +1449,7 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
 }
 
 // Dado um tipo de objeto, retorna o valor de tolerância
-// Usado para a função de colisão
+// Usado para a função de colisão com o player
 float GetTileToleranceValue(int object_type) {
 	switch(object_type) {
     	case WALL:
@@ -1460,63 +1477,38 @@ float GetTileToleranceValue(int object_type) {
     }
 }
 
-// Pega todos os objetos colidindo com o jogador, dado sua posição
-vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
-    unsigned int obj_index = 0;
-    vecInt objects_in_position;
+// Dado dois objetos e seus tamanhos, testa a colisão via bounding box
+bool BBoxCollision(vec4 obj1_pos, vec4 obj2_pos, vec3 obj1_size, vec3 obj2_size, float epsilon) {
+    // Recomputa a bounding box dos objetos
+    // Isto porque a posição dos objetos está no centro, e não no canto, como deveria ser
+    obj1_pos = GetObjectTopBoundary(obj1_pos, obj1_size);
+    obj2_pos = GetObjectTopBoundary(obj2_pos, obj2_size);
 
-    // Varre todos os objetos registrados no mapa
-    while (obj_index < map_objects.size()) {
-        vec4 obj_position = map_objects[obj_index].object_position;
-        vec3 obj_size = map_objects[obj_index].object_size;
-
-        // Computa dimensões e limites do objeto
-        vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
-        vec4 obj_end = vec4(obj_start.x + obj_size.x, obj_start.y + obj_size.y, obj_start.z + obj_size.z, 1.0f);
-
-        // Computa valor de tolerância (quanto o player pode andar "dentro" do objeto, ou quanto ele deve ficar longe)
-        float tol = GetTileToleranceValue(map_objects[obj_index].object_type);
-
-        float player_height = 1.0f;
-        float y = -1.0f;
-
-        bool is_x_in_collision_interval = (player_position.x <= obj_end.x + tol && player_position.x >= obj_start.x - tol);
-        bool is_y_in_collision_interval = (y <= obj_start.y && obj_start.y < y + player_height) || (obj_start.y <= y && y < obj_end.y);
-        bool is_z_in_collision_interval = (player_position.z <= obj_end.z + tol && player_position.z >= obj_start.z - tol);
-
-        if (is_x_in_collision_interval && is_y_in_collision_interval && is_z_in_collision_interval)
-        	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
-
-        obj_index++;
-    }
-
-    return objects_in_position;
-}
-
-// Dado os limites de dois objetos (os dois cantos), verifica se os dois colidem ou não
-bool TestCubeCollision(vec4 obj1_pos, vec4 obj2_pos, vec3 obj1_size, vec3 obj2_size) {
-	float epsilon = 0.0f;
-	if (
-   		((obj1_pos.x - epsilon <= obj2_pos.x && obj2_pos.x < obj1_pos.x + obj1_size.x + epsilon) || (obj2_pos.x - epsilon <= obj1_pos.x && obj1_pos.x < obj2_pos.x + obj2_size.x + epsilon)) &&
-   		((obj1_pos.y <= obj2_pos.y && obj2_pos.y < obj1_pos.y + obj1_size.y) || (obj2_pos.y <= obj1_pos.y && obj1_pos.y < obj2_pos.y + obj2_size.y)) &&
-   		((obj1_pos.z - epsilon <= obj2_pos.z && obj2_pos.z < obj1_pos.z + obj1_size.z + epsilon) || (obj2_pos.z - epsilon <= obj1_pos.z && obj1_pos.z < obj2_pos.z + obj2_size.z + epsilon))
-   		)
-		return true;
-	else return false;
+    if (
+        ((obj1_pos.x - epsilon <= obj2_pos.x && obj2_pos.x < obj1_pos.x + obj1_size.x + epsilon) || (obj2_pos.x - epsilon <= obj1_pos.x && obj1_pos.x < obj2_pos.x + obj2_size.x + epsilon)) &&
+        ((obj1_pos.y <= obj2_pos.y && obj2_pos.y < obj1_pos.y + obj1_size.y) || (obj2_pos.y <= obj1_pos.y && obj1_pos.y < obj2_pos.y + obj2_size.y)) &&
+        ((obj1_pos.z - epsilon <= obj2_pos.z && obj2_pos.z < obj1_pos.z + obj1_size.z + epsilon) || (obj2_pos.z - epsilon <= obj1_pos.z && obj1_pos.z < obj2_pos.z + obj2_size.z + epsilon))
+        )
+        return true;
+    else return false;
 }
 
 // Pega todos os objetos que colidem com outro objeto, dado o índice
 //  do objeto na lista de objetos do nível, e a posição à qual ele está indo
 vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) {
-    unsigned int obj_index = 0;
     vecInt objects_in_position;
+    vec3 target_obj_size;
 
-    // Computa dimensões e limites do objeto a ser testado
-    vec3 target_obj_size = map_objects[target_obj_index].object_size;
-    vec4 target_obj_start = GetObjectTopBoundary(target_obj_pos, target_obj_size);
+    // Testa se o objeto em questão é o jogador
+    if (target_obj_index == -1)
+        target_obj_size = vec3(0.01f, 0.6f, 0.01f); // Tamanho do jogador considerado nas colisões
+    else target_obj_size = map_objects[target_obj_index].object_size;
+
     // Varre todos os objetos do nível
+    unsigned int obj_index = 0;
     while (obj_index < map_objects.size()) {
     	// O próprio objeto está na lista e deve ser ignorado
+        // (se for o player, o index é -1 e este teste sempre falha)
     	if (obj_index == target_obj_index) {
     		obj_index++;
     		continue;
@@ -1525,10 +1517,12 @@ vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) 
         vec4 obj_position = map_objects[obj_index].object_position;
         vec3 obj_size = map_objects[obj_index].object_size;
 
-        // Computa dimensões e limites do objeto atual
-        vec4 obj_start = GetObjectTopBoundary(obj_position, obj_size);
+        // Computa valor de tolerância (quanto o objeto pode andar "dentro" do outro objeto, ou quanto ele deve ficar longe)
+        float tol = 0.0f;
+        if (target_obj_index == -1)
+            tol = GetTileToleranceValue(map_objects[obj_index].object_type);
 
-        if (TestCubeCollision(target_obj_start, obj_start, target_obj_size, obj_size))
+        if (BBoxCollision(target_obj_pos, obj_position, target_obj_size, obj_size, tol))
         	objects_in_position.push_back(obj_index); // Acrescenta o objeto na lista
 
         obj_index++;
@@ -1537,48 +1531,40 @@ vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos) 
     return objects_in_position;
 }
 
-// Dado um vetor, testa se existe um objeto que possa bloquear
-//  o movimento de outro objeto (cubo de sujeira)
-bool vectorHasBlockBlockingObject(vecInt vector_objects) {
-	unsigned int curr_index = 0;
-	vecInt movable_blocks;
+// Pega todos os objetos colidindo com o jogador, dado sua posição
+vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
+    return GetObjectsCollidingWithObject(-1, player_position);
+}
 
+// Dado um vetor, testa se existe um objeto que possa bloquear
+//  o movimento de outro objeto (cubo de sujeira ou inimigos p. ex.)
+bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
+    unsigned int curr_index = 0;
 	while (curr_index < vector_objects.size()) {
 		int curr_obj_index = vector_objects[curr_index];
 		int colliding_obj_type = map_objects[curr_obj_index].object_type;
+
 		// Adicione novos objetos bloqueantes aqui
-		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT)
-			|| (colliding_obj_type == DOOR_RED) || (colliding_obj_type == DOOR_GREEN) || (colliding_obj_type == DOOR_BLUE) || (colliding_obj_type == DOOR_YELLOW)
-			|| (colliding_obj_type == COW) || (colliding_obj_type == JET) || (colliding_obj_type == BEACHBALL) || (colliding_obj_type == VOLLEYBALL))
+        if ((is_volleyball && colliding_obj_type == FLOOR) || 
+            isIn(colliding_obj_type, {WALL, DIRTBLOCK, DIRT, DOOR_RED, DOOR_GREEN, DOOR_YELLOW, DOOR_BLUE,
+                                        COW, JET, BEACHBALL, VOLLEYBALL}))
 			return true;
+
+        // Caso seja uma bola de volei (quicando), deve-se levar em conta o chão também.
+
 		curr_index++;
 	}
 
 	return false;
 }
 
-bool vectorHasBallBlockingObject(vecInt vector_objects) {
-	unsigned int curr_index = 0;
-	vecInt movable_blocks;
-
-	while (curr_index < vector_objects.size()) {
-		int curr_obj_index = vector_objects[curr_index];
-		int colliding_obj_type = map_objects[curr_obj_index].object_type;
-		// Adicione novos objetos bloqueantes aqui
-		if ((colliding_obj_type == WALL) || (colliding_obj_type == DIRTBLOCK) || (colliding_obj_type == DIRT)
-			|| (colliding_obj_type == DOOR_RED) || (colliding_obj_type == DOOR_GREEN) || (colliding_obj_type == DOOR_BLUE) || (colliding_obj_type == DOOR_YELLOW)
-			|| (colliding_obj_type == COW) || (colliding_obj_type == JET) || (colliding_obj_type == BEACHBALL) || (colliding_obj_type == VOLLEYBALL)
-			|| (colliding_obj_type == FLOOR))
-			return true;
-		curr_index++;
-	}
-
-	return false;
+bool vectorHasVolleyballBlockingObject(vecInt vector_objects) {
+	return vectorHasObjectBlockingObject(vector_objects, true);
 }
 
 void MoveJet(int jet_index) {
+    // Calcula para onde o jet deve andar
 	vec4 target_pos = map_objects[jet_index].object_position;
-
 	switch(map_objects[jet_index].direction) {
 		case 0: {
 			target_pos.z += MOVEMENT_AMOUNT;
@@ -1598,9 +1584,9 @@ void MoveJet(int jet_index) {
 		}
 	}
 
+    // Testa colisões
 	vecInt collided_objects = GetObjectsCollidingWithObject(jet_index, target_pos);
-
-	if (!vectorHasBlockBlockingObject(collided_objects)) {
+	if (!vectorHasObjectBlockingObject(collided_objects)) {
 		map_objects[jet_index].object_position = target_pos;
 
 		// Testa se atingiu fogo. Se atingiu, morre
@@ -1609,6 +1595,7 @@ void MoveJet(int jet_index) {
 		    map_objects.erase(map_objects.begin() + jet_index);
 	    }
 	}
+    // Se colidiu, recomputa direção
 	else map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
 }
 
@@ -1636,7 +1623,7 @@ void MoveBeachBall(int ball_index) {
 
 	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
 
-	if (!vectorHasBlockBlockingObject(collided_objects)) {
+	if (!vectorHasObjectBlockingObject(collided_objects)) {
 		map_objects[ball_index].object_position = target_pos;
 
 		// Testa se atingiu fogo. Se atingiu, morre
@@ -1658,7 +1645,7 @@ void MoveVolleyBall(int ball_index) {
 
 	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
 
-	if (!vectorHasBallBlockingObject(collided_objects)) {
+	if (!vectorHasVolleyballBlockingObject(collided_objects)) {
 		map_objects[ball_index].object_position = target_pos;
 
 		// Testa se atingiu fogo. Se atingiu, morre
@@ -1717,7 +1704,10 @@ bool CollidedWithEnemy(vecInt vector_objects) {
 	return false;
 }
 
-
+void ClearInventory() {
+    player_inventory.keys = {0,0,0,0};
+    player_inventory.cows = 0;
+}
 
 // Função que move um bloco
 // Ao mover o bloco, testa-se colisão também.
@@ -1744,7 +1734,7 @@ void MoveBlock(int block_index) {
 
 	vecInt collided_objects = GetObjectsCollidingWithObject(block_index, target_pos);
 
-	if (!vectorHasBlockBlockingObject(collided_objects)) {
+	if (!vectorHasObjectBlockingObject(collided_objects)) {
 		map_objects[block_index].object_position = target_pos;
 
 		// Testa se atingiu água. Se atingiu, transforma-a em sujeira.
@@ -1767,22 +1757,22 @@ void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
     }
 
 	for (unsigned int i = 0; i < yellow.size(); i++) {
-		collected_keys[3]--;
+		player_inventory.keys.yellow--;
 		map_objects.erase(map_objects.begin() + (yellow[yellow.size() - 1 - i]));
 	}
 
 	for (unsigned int i = 0; i < blue.size(); i++) {
-		collected_keys[2]--;
+		player_inventory.keys.blue--;
 		map_objects.erase(map_objects.begin() + (blue[blue.size() - 1 - i]));
 	}
 
 	for (unsigned int i = 0; i < green.size(); i++) {
-		collected_keys[1]--;
+		player_inventory.keys.green--;
 		map_objects.erase(map_objects.begin() + (green[green.size() - 1 - i]));
 	}
 
 	for (unsigned int i = 0; i < red.size(); i++) {
-		collected_keys[0]--;
+		player_inventory.keys.red--;
 		map_objects.erase(map_objects.begin() + (red[red.size() - 1 - i]));
 	}
 }
@@ -1811,19 +1801,19 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
 		int curr_obj_index = vector_objects[curr_index];
 
 		if (map_objects[curr_obj_index].object_type == DOOR_RED)
-			if (collected_keys[0] == 0)
+			if (player_inventory.keys.red == 0)
 				return true;
 			else unlocked_red_doors.push_back(curr_obj_index);
 		else if (map_objects[curr_obj_index].object_type == DOOR_GREEN)
-			if (collected_keys[1] == 0)
+			if (player_inventory.keys.green == 0)
 				return true;
 			else unlocked_green_doors.push_back(curr_obj_index);
 		else if (map_objects[curr_obj_index].object_type == DOOR_BLUE)
-			if (collected_keys[2] == 0)
+			if (player_inventory.keys.blue == 0)
 				return true;
 			else unlocked_blue_doors.push_back(curr_obj_index);
 		else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW)
-			if (collected_keys[3] == 0)
+			if (player_inventory.keys.yellow == 0)
 				return true;
 			else unlocked_yellow_doors.push_back(curr_obj_index);
 
@@ -1835,10 +1825,10 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
 	while (curr_index < vector_objects.size()) {
 		int curr_obj_index = vector_objects[curr_index];
 		if (map_objects[curr_obj_index].object_type == COW) {
-			if (collected_babies == level_babies) {
+			if (player_inventory.cows == g_LevelCowAmount) {
 			    sound.setBuffer(winsound);
                 sound.play();
-				endmap = true;
+				g_MapEnded = true;
 				return false;
 			} else
 				return true;
@@ -1936,39 +1926,39 @@ void MovePlayer() {
 		    int collided_baby_index = GetVectorObjectType(collided_objects, BABYCOW);
 
 		    if (CollidedWithEnemy(collided_objects)) {
-		    	death_by_enemy = true;
+		    	g_DeathByEnemy = true;
 		    	sound.setBuffer(deathsound);
                 sound.play();
 		    }
 		    else if (GetVectorObjectType(collided_objects, WATER) >= 0) {
-		        death_by_water = true;
+		        g_DeathByWater = true;
 		    } else if (collided_dirt_index >= 0) {
 		        map_objects[collided_dirt_index].object_type = FLOOR;
 		    } else if (collided_redkey_index >= 0) {
 		        sound.setBuffer(keysound);
                 sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_redkey_index);
-		    	collected_keys[0]++;
+		    	player_inventory.keys.red++;
 		    } else if (collided_greenkey_index >= 0) {
 		        sound.setBuffer(keysound);
                 sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_greenkey_index);
-		    	collected_keys[1]++;
+		    	player_inventory.keys.green++;
 		    } else if (collided_bluekey_index >= 0) {
 		        sound.setBuffer(keysound);
                 sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_bluekey_index);
-		    	collected_keys[2]++;
+		    	player_inventory.keys.blue++;
 		    } else if (collided_yellowkey_index >= 0) {
 		        sound.setBuffer(keysound);
                 sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_yellowkey_index);
-		    	collected_keys[3]++;
+		    	player_inventory.keys.yellow++;
 		    } else if (collided_baby_index >= 0) {
 		        sound.setBuffer(cowsound);
                 sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_baby_index);
-		    	collected_babies++;
+		    	player_inventory.cows++;
 		    }
 		}
 	}
@@ -1987,7 +1977,7 @@ vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
                 float x = -(center_x - col);
                 float z = -(center_z - line);
 
-                return vec4(x, 0.0f, z, 1.0f);
+                return vec4(x, -0.5f, z, 1.0f);
             }
         }
     }
@@ -2223,11 +2213,11 @@ Level LoadLevelFromFile(string filepath) {
     else {
         try {
             // Salva largura e altura na estrutura do nível.
-            string width, height, babies;
-            getline(level_file, babies);
+            string width, height, cow_no;
+            getline(level_file, cow_no);
             getline(level_file, width);
             getline(level_file, height);
-            loaded_level.babies = atoi(babies.c_str());
+            loaded_level.cow_no = atoi(cow_no.c_str());
             loaded_level.width = atoi(width.c_str());
             loaded_level.height = atoi(height.c_str());
 
@@ -2531,7 +2521,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-	if (current_screen != 2)
+	if (g_CurrentScreen == SCREEN_MAINMENU || g_CurrentScreen == SCREEN_LEVELSELECT)
 		return;
 
     // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
@@ -2588,7 +2578,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_ShowInfoText = !g_ShowInfoText;
     }
 
-    if (key == GLFW_KEY_C && action == GLFW_PRESS && current_screen == 2)
+    if (key == GLFW_KEY_C && action == GLFW_PRESS && g_CurrentScreen == 2)
         g_useFirstPersonCamera = !(g_useFirstPersonCamera);
 
     // Verifica se as teclas de movimentação foram pressionadas/soltas
@@ -2630,6 +2620,16 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
     {
         key_d_pressed = false;
+    }
+
+    if (key == GLFW_KEY_M && action == GLFW_PRESS) {
+        g_MusicOn = !g_MusicOn;
+        if (!g_MusicOn)
+            StopAllMusic();
+    }
+
+    if (key == GLFW_KEY_N && action == GLFW_PRESS) {
+        g_SoundsOn = !g_SoundsOn;
     }
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -2687,20 +2687,6 @@ void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 project
 
     TextRendering_PrintString(window, " Projection matrix        Camera                   NDC", -1.0f, 1.0f-13*pad, 1.0f);
     TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f-14*pad, 1.0f);
-}
-
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window) {
-    if ( !g_ShowInfoText )
-        return;
-
-    float pad = TextRendering_LineHeight(window);
-
-    char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.

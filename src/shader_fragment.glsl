@@ -84,18 +84,18 @@ out vec4 color;
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
 
-int getPx(int coordsTextureX, int width, int num_tiles_horizontal, int texture_num);
-int getPy(int coordsTextureY, int height, int num_tiles_vertical, int texture_num);
-
-
-highp float rand(vec2 co)
+int getPx(int indexX, int image_width, int n_tiles_horiz)
 {
-    highp float a = 12.9898;
-    highp float b = 78.233;
-    highp float c = 43758.5453;
-    highp float dt= dot(co.xy ,vec2(a,b));
-    highp float sn= mod(dt,3.14);
-    return fract(sin(sn) * c);
+    int tile_width = image_width / n_tiles_horiz;
+    int pos_x = indexX * tile_width;
+    return pos_x;
+}
+
+int getPy(int indexY, int image_height, int n_tiles_vert)
+{
+    int tile_height = image_height / n_tiles_vert;
+    int pos_y = indexY * tile_height;
+    return pos_y;
 }
 
 void main()
@@ -324,13 +324,4 @@ void main()
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color = pow(color, vec4(1.0,1.0,1.0,1.0)/2.2);
-}
-
-int getPx(int coordsTextureX, int width, int num_tiles_horizontal, int texture_num)
-{
-    int minx = (widht/num_tiles_horizontal) * texture_num;
-    int maxx = (widht/num_tiles_horizontal) * (texture_num + 1);
-    int widthpos = (coordsTextureX - minx)/(maxx - minx);
-
-    return widthpos;
 }
