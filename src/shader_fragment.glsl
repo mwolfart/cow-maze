@@ -62,11 +62,6 @@ uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
-uniform sampler2D TextureImage5;
-uniform sampler2D TextureImage6;
-uniform sampler2D TextureImage7;
-uniform sampler2D TextureImage8;
-uniform sampler2D TextureImage9;
 
 #define WALLGROUNDGRASS_W 841
 #define WALLGROUNDGRASS_H 305
@@ -84,27 +79,12 @@ out vec4 color;
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
 
-int getPx(int indexX, int image_width, int n_tiles_horiz)
-{
-    int tile_width = image_width / n_tiles_horiz;
-    int pos_x = indexX * tile_width;
-    return pos_x;
-}
-
-int getPy(int indexY, int image_height, int n_tiles_vert)
-{
-    int tile_height = image_height / n_tiles_vert;
-    int pos_y = indexY * tile_height;
-    return pos_y;
-}
-
 void main()
 {
     // Obtemos a posição da câmera utilizando a inversa da matriz que define o
     // sistema de coordenadas da câmera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 camera_position = inverse(view) * origin;
-
 
     // O fragmento atual é coberto por um ponto que percente à superfície de um
     // dos objetos virtuais da cena. Este ponto, p, possui uma posição no
@@ -160,13 +140,16 @@ void main()
         U = (position_model[0] - minx)/(maxx - minx);
         V = (position_model[1] - miny)/(maxy - miny);
 
-        Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        U = U/4;
+        V = V/4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == FLOOR )
     {
-        U = texcoords.x;
-        V = texcoords.y;
+        U = (texcoords.x + 0)/ 4;
+        V = (texcoords.y + 3)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
@@ -177,46 +160,134 @@ void main()
         V = texcoords.y;
 
         switch (anim_timer) {
-        case 0: { Kd = texture(TextureImage3, vec2(U,V)).rgba; break; }
-        case 1: { Kd = texture(TextureImage4, vec2(U,V)).rgba; break; }
-        case 2: { Kd = texture(TextureImage5, vec2(U,V)).rgba; break; }
-        case 3: { Kd = texture(TextureImage6, vec2(U,V)).rgba; break; }
+        case 0: { Kd = texture(TextureImage1, vec2(U,V)).rgba; break; }
+        case 1: { Kd = texture(TextureImage2, vec2(U,V)).rgba; break; }
+        case 2: { Kd = texture(TextureImage3, vec2(U,V)).rgba; break; }
+        case 3: { Kd = texture(TextureImage4, vec2(U,V)).rgba; break; }
         }
 
         color = Kd;
     }
     else if ( object_id == WALL )
     {
-        U = texcoords.x;
-        V = texcoords.y;
+        U = (texcoords.x + 1)/4;
+        V = (texcoords.y + 3)/4;
 
-        Kd = texture(TextureImage1, vec2(U,V)).rgba;
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DIRT )
     {
-        U = texcoords.x;
-        V = texcoords.y;
+        U = (texcoords.x + 3)/ 4;
+        V = (texcoords.y + 3)/ 4;
 
-        Kd = texture(TextureImage7, vec2(U,V)).rgba;
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DIRTBLOCK )
     {
-        U = texcoords.x;
-        V = texcoords.y;
+        U = (texcoords.x + 0)/ 4;
+        V = (texcoords.y + 2)/ 4;
 
-        Kd = texture(TextureImage8, vec2(U,V)).rgba;
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == DOOR_RED ) {
-        color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        float x = position_model[0];
+        float y = position_model[1];
+        float z = position_model[2];
+
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        if (y < (maxy - 0.01) && y > (miny+0.01)) {
+            U = (texcoords.x + 2)/ 4;
+            V = (texcoords.y + 2)/ 4;
+        } else {
+            U = (texcoords.x + 2)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        }
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
     } else if ( object_id == DOOR_GREEN ) {
-        color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        float x = position_model[0];
+        float y = position_model[1];
+        float z = position_model[2];
+
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        if (y < (maxy - 0.01) && y > (miny+0.01)) {
+            U = (texcoords.x + 3)/ 4;
+            V = (texcoords.y + 2)/ 4;
+        } else {
+            U = (texcoords.x + 2)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        }
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
     } else if ( object_id == DOOR_BLUE ) {
-        color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+        float x = position_model[0];
+        float y = position_model[1];
+        float z = position_model[2];
+
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        if (y < (maxy - 0.01) && y > (miny+0.01)) {
+            U = (texcoords.x + 0)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        } else {
+            U = (texcoords.x + 2)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        }
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
     } else if ( object_id == DOOR_YELLOW ) {
-        color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        float x = position_model[0];
+        float y = position_model[1];
+        float z = position_model[2];
+
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        if (y < (maxy - 0.01) && y > (miny+0.01)) {
+            U = (texcoords.x + 1)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        } else {
+            U = (texcoords.x + 2)/ 4;
+            V = (texcoords.y + 1)/ 4;
+        }
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
     }
     else if ( object_id == KEY_RED ) {
         Kd = vec4(0.8f, 0.0f, 0.0f, 1.0f);
@@ -285,12 +356,26 @@ void main()
         vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     } else if ( object_id == BEACHBALL ) {
-        U = texcoords.x;
-        V = texcoords.y;
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        vec4 p_vector = position_model - bbox_center;
 
-        Kd = texture(TextureImage7, vec2(U,V)).rgba;
+        float px = position_model[0];
+        float py = position_model[1];
+        float pz = position_model[2];
+
+        float rho = sqrt(pow(px,2) + pow(py,2) + pow(pz, 2));
+        float theta = atan(px, pz);
+        float phi = asin(py/rho);
+
+        U = (theta + M_PI) / (2 * M_PI);
+        V = (phi + M_PI/2) / M_PI;
+
+        U = (U + 3)/ 4;
+        V = (V + 1)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         Ks = vec4(0.5, 0.5, 0.7, 1.0f);
-        Ka = vec4(0.4f, 0.4f, 0.4f, 1.0f);
+        Ka = texture(TextureImage0, vec2(U,V)).rgba;
         q = 32.0;
 
         vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
@@ -298,12 +383,26 @@ void main()
         vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
         color = lambert_diffuse_term + ambient_term + phong_specular_term;
     } else if ( object_id == VOLLEYBALL ) {
-        U = texcoords.x;
-        V = texcoords.y;
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        vec4 p_vector = position_model - bbox_center;
 
-        Kd = texture(TextureImage6, vec2(U,V)).rgba;
+        float px = position_model[0];
+        float py = position_model[1];
+        float pz = position_model[2];
+
+        float rho = sqrt(pow(px,2) + pow(py,2) + pow(pz, 2));
+        float theta = atan(px, pz);
+        float phi = asin(py/rho);
+
+        U = (theta + M_PI) / (2 * M_PI);
+        V = (phi + M_PI/2) / M_PI;
+
+        U = (U + 0)/ 4;
+        V = (V + 0)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
         Ks = vec4(0.5, 0.5, 0.7, 1.0f);
-        Ka = vec4(0.4f, 0.4f, 0.4f, 1.0f);
+        Ka = texture(TextureImage0, vec2(U,V)).rgba;
         q = 32.0;
 
         vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));

@@ -38,10 +38,6 @@
 #include "utils.h"
 #include "matrices.h"
 
-// Constantes que definem as velocidades
-#define MOVEMENT_AMOUNT 0.02f
-#define ROTATION_SPEED_X 0.01f
-#define ROTATION_SPEED_Y 0.004f
 #define PI 3.14159265358979323846
 
 typedef glm::vec3 vec3;
@@ -105,9 +101,10 @@ struct MapObject {
 struct Level {
 	int cow_no;
     int time;
+    int skybox;
     int height;
     int width;
-    std::vector<std::vector<char>> plant;
+    std::vector<std::vector<string>> plant;
 };
 
 // CPU representation of a particle
@@ -135,6 +132,7 @@ struct Inventory {
 // Auxiliares simples
 float MaxFloat2(float a, float b);
 vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector);
+constexpr unsigned int string2int(const char* str, int h = 0);
 
 // Renderização de telas
 int RenderMainMenu(GLFWwindow* window);
@@ -146,9 +144,9 @@ void ShowInventory(GLFWwindow* window);
 // Controle de um nível
 void ClearInventory();
 void RegisterLevelObjects(Level level);
-void RegisterObjectInMapVector(char tile_type, float x, float z);
+void RegisterObjectInMapVector(string tile_type, float x, float z);
 void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
-vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant);
 
 // Desenho
 void DrawMapObjects();
@@ -263,6 +261,11 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
 #define PLAYER_FOOT 	65
 
 #define PARTICLE 	80
+
+#define MOVEMENT_AMOUNT 0.02f
+#define ENEMY_SPEED 0.05f
+#define ROTATION_SPEED_X 0.01f
+#define ROTATION_SPEED_Y 0.004f
 
 #define ANIMATION_SPEED 10
 #define ITEM_ROTATION_SPEED 0.1
@@ -429,16 +432,11 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamento de imagens
-    LoadTextureImage("../../data/textures/ground.png"); 			// TextureImage0
-    LoadTextureImage("../../data/textures/wall.png");   			// TextureImage1
-    LoadTextureImage("../../data/textures/wall.png");    			// TextureImage2
-    LoadTextureImage("../../data/textures/animated/water1.png");    // TextureImage3
-    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage4
-    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage5
-    LoadTextureImage("../../data/textures/animated/water13.png");    // TextureImage6
-    LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage7
-    LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage8
-    LoadTextureImage("../../data/textures/wallgroundgrass.png");    // TextureImage9
+    LoadTextureImage("../../data/textures/textures.png");   		// TextureImage0
+    LoadTextureImage("../../data/textures/animated/water1.png");    // TextureImage1
+    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage2
+    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage3
+    LoadTextureImage("../../data/textures/animated/water13.png");   // TextureImage4
 
     // Carregamento de models
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -583,6 +581,14 @@ vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
     if (isVectorPosVector)
         return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 1.0f);
     else return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 0.0f);
+}
+
+// Converte uma string para inteiro
+// Usada na leitura de um nível
+constexpr unsigned int string2int(const char* str, int h) {
+    // DJB Hash function
+    // not my code but can't remember where I got it from
+    return !str[h] ? 5381 : (string2int(str, h+1)*33) ^ str[h];
 }
 
 ////////////////////////////
@@ -994,7 +1000,7 @@ void RegisterLevelObjects(Level level) {
 
     for(int line = 0; line < level.height; line++) {
         for(int col = 0; col < level.width; col++) {
-            char current_tile = level.plant[line][col];
+            string current_tile = level.plant[line][col];
             float x = -(center_x - col);
             float z = -(center_z - line);
 
@@ -1005,7 +1011,7 @@ void RegisterLevelObjects(Level level) {
 
 // Função que registra um objeto em dada posição do mapa
 // CASO SE QUEIRA ADICIONAR NOVOS OBJETOS, DEVE-SE FAZÊ-LO AQUI
-void RegisterObjectInMapVector(char tile_type, float x, float z) {
+void RegisterObjectInMapVector(string tile_type, float x, float z) {
     /* Propriedades de objetos (deslocamento, tamanho, etc) */
 
     // Cubo (genérico)
@@ -1045,130 +1051,166 @@ void RegisterObjectInMapVector(char tile_type, float x, float z) {
     float floor_shift = -1.0f;
 
     /* Adicione novos tipos de objetos abaixo */
-    switch(tile_type) {
+    switch(string2int(tile_type.c_str())) {
     // Parede
-    case 'B': {
+    case string2int("BL"): {
         RegisterObjectInMap(WALL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         break;
     }
 
     // Água
-    case 'W':{
+    case string2int("WA"):{
         RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), cube_size, "plane", planemodel_size);
         break;
     }
 
     // Fogo:
-    case 'f':{
+    case string2int("FI"):{
         RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Terra
-    case 'd':{
+    case string2int("DI"):{
         RegisterObjectInMap(DIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Bloco de terra
-    case 'D':{
+    case string2int("BD"):{
         RegisterObjectInMap(DIRTBLOCK, vec4(x, dirtblock_vertical_shift, z, 1.0f), dirtblock_size, "cube", dirtblock_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Chave vermelha
-    case 'r':{
+    case string2int("kr"):{
     	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
     // Chave verde
-    case 'g':{
+    case string2int("kg"):{
     	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave azul
-    case 'b':{
+    case string2int("kb"):{
     	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
 	// Chave amarela
-    case 'y':{
+    case string2int("ky"):{
     	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
     	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
     	break;
     }
 
     // Porta vermelha:
-    case 'R':{
+    case string2int("DR"):{
         RegisterObjectInMap(DOOR_RED, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta verde:
-    case 'G':{
+    case string2int("DG"):{
         RegisterObjectInMap(DOOR_GREEN, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta azul:
-    case 'A':{
+    case string2int("DB"):{
         RegisterObjectInMap(DOOR_BLUE, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Porta amarela:
-    case 'Y':{
+    case string2int("DY"):{
         RegisterObjectInMap(DOOR_YELLOW, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Vaquinha bebê:
-    case 'c':{
+    case string2int("co"):{
         RegisterObjectInMap(BABYCOW, vec4(x, babycow_vertical_shift, z, 1.0f), babycow_size, "cow", babycow_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Vaca mãe:
-    case 'C':{
+    case string2int("CW"):{
         RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow", cow_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
-    case 'j':{
+    case string2int("J0"):{
         RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
-    case '0':{
-        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 0, 0.2f);
+    case string2int("J1"):{
+        RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 1);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
-    case '9':{
+    case string2int("J2"):{
+        RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 2);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("J3"):{
+        RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 3);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("B0"):{
+        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("B1"):{
+        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 1);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("B2"):{
+        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 2);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("B3"):{
+        RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 3);
+        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        break;
+    }
+
+    case string2int("V0"):{
         RegisterObjectInMap(VOLLEYBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size);
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
 
     // Jogador e piso
-    case 'P':
-    case 'F':{
+    case string2int("PS"):
+    case string2int("FF"):{
         RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
         break;
     }
@@ -1192,7 +1234,7 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
 }
 
 // Função que encontra as coordenadas do spawn do jogador na planta do mapa
-vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant) {
     int map_height = plant.size();
     int map_width = plant[0].size();
     float center_x = (map_width-1)/2.0f;
@@ -1200,7 +1242,7 @@ vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
 
     for(int line = 0; line < map_height; line++) {
         for(int col = 0; col < map_width; col++) {
-            if(plant[line][col] == 'P') {
+            if(plant[line][col] == "PS") {
                 float x = -(center_x - col);
                 float z = -(center_z - line);
 
@@ -1554,22 +1596,26 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
     while (curr_index < vector_objects.size()) {
         int curr_obj_index = vector_objects[curr_index];
 
-        if (map_objects[curr_obj_index].object_type == DOOR_RED)
+        if (map_objects[curr_obj_index].object_type == DOOR_RED) {
             if (player_inventory.keys.red == 0)
                 return true;
             else unlocked_red_doors.push_back(curr_obj_index);
-        else if (map_objects[curr_obj_index].object_type == DOOR_GREEN)
+        }
+        else if (map_objects[curr_obj_index].object_type == DOOR_GREEN) {
             if (player_inventory.keys.green == 0)
                 return true;
             else unlocked_green_doors.push_back(curr_obj_index);
-        else if (map_objects[curr_obj_index].object_type == DOOR_BLUE)
+        }
+        else if (map_objects[curr_obj_index].object_type == DOOR_BLUE) {
             if (player_inventory.keys.blue == 0)
                 return true;
             else unlocked_blue_doors.push_back(curr_obj_index);
-        else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW)
+        }
+        else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW) {
             if (player_inventory.keys.yellow == 0)
                 return true;
             else unlocked_yellow_doors.push_back(curr_obj_index);
+        }
 
         curr_index++;
     }
@@ -1817,19 +1863,19 @@ void MoveJet(int jet_index) {
     vec4 target_pos = map_objects[jet_index].object_position;
     switch(map_objects[jet_index].direction) {
         case 0: {
-            target_pos.z += MOVEMENT_AMOUNT;
+            target_pos.z += MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 1: {
-            target_pos.x += MOVEMENT_AMOUNT;
+            target_pos.x += MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 2: {
-            target_pos.z -= MOVEMENT_AMOUNT;
+            target_pos.z -= MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 3: {
-            target_pos.x -= MOVEMENT_AMOUNT;
+            target_pos.x -= MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
     }
@@ -1862,19 +1908,19 @@ void MoveBeachBall(int ball_index) {
 
     switch(map_objects[ball_index].direction) {
         case 0: {
-            target_pos.z += MOVEMENT_AMOUNT;
+            target_pos.z += MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 1: {
-            target_pos.x += MOVEMENT_AMOUNT;
+            target_pos.x += MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 2: {
-            target_pos.z -= MOVEMENT_AMOUNT;
+            target_pos.z -= MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
         case 3: {
-            target_pos.x -= MOVEMENT_AMOUNT;
+            target_pos.x -= MOVEMENT_AMOUNT + ENEMY_SPEED;
             break;
         }
     }
@@ -2220,11 +2266,15 @@ Level LoadLevelFromFile(string filepath) {
     else {
         try {
             // Salva largura e altura na estrutura do nível.
-            string width, height, cow_no;
+            string width, height, cow_no, time, skybox;
             getline(level_file, cow_no);
+            getline(level_file, time);
+            getline(level_file, skybox);
             getline(level_file, width);
             getline(level_file, height);
             loaded_level.cow_no = atoi(cow_no.c_str());
+            loaded_level.time = atoi(time.c_str());
+            loaded_level.skybox = atoi(skybox.c_str());
             loaded_level.width = atoi(width.c_str());
             loaded_level.height = atoi(height.c_str());
 
@@ -2237,10 +2287,14 @@ Level LoadLevelFromFile(string filepath) {
             while (line < loaded_level.height) {
                 string file_line;
                 getline(level_file, file_line);
-                std::vector<char> map_line;
+                std::vector<string> map_line;
 
                 while (col < loaded_level.width) {
-                    map_line.push_back(file_line[col]);
+                    string tile;
+                    for(int tilesize = 0; tilesize < 2; tilesize++) {
+                        tile += file_line[col * 3 + tilesize]; 
+                    }
+                    map_line.push_back(tile);
                     col++;
                 }
 
@@ -2346,12 +2400,6 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), 4);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), 5);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
-
 
     glUseProgram(0);
 }
