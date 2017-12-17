@@ -132,44 +132,90 @@ struct Inventory {
 // DECLARAÇÃO DE FUNÇÕES //
 ///////////////////////////
 
-// Declaração de várias funções utilizadas em main().  Essas estão definidas
-// logo após a definição de main() neste arquivo.
-void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
-void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
-void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
-void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
-void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model); // Desenha um objeto armazenado em g_VirtualScene
-GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
-GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
-void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
-GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Cria um programa de GPU
-void PrintObjModelInfo(ObjModel*); // Função para debugging
+// Auxiliares simples
+float MaxFloat2(float a, float b);
+vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector);
+
+// Renderização de telas
+int RenderMainMenu(GLFWwindow* window);
+int RenderLevelSelection(GLFWwindow* window);
+vec4 AdjustFPSCamera(vec4 position);
+int RenderLevel(int level_number, GLFWwindow* window);
+void ShowInventory(GLFWwindow* window);
+
+// Controle de um nível
+void ClearInventory();
+void RegisterLevelObjects(Level level);
+void RegisterObjectInMapVector(char tile_type, float x, float z);
+void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
+
+// Desenho
+void DrawMapObjects();
+void DrawPlayer(vec4 position, float angle_y, float angle_x, float scale);
+void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model);
+
+// Colisões
+vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size);
+float GetTileToleranceValue(int object_type);
+bool BBoxCollision(vec4 obj1_pos, vec4 obj2_pos, vec3 obj1_size, vec3 obj2_size, float epsilon);
+vecInt GetObjectsCollidingWithObject(int target_obj_index, vec4 target_obj_pos);
+vecInt GetObjectsCollidingWithPlayer(vec4 player_position);
+int GetVectorObjectType(vecInt vector_objects, int type);
+int GetVectorObjectType(vecInt vector_objects, vecInt types);
+bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball = false);
+bool vectorHasVolleyballBlockingObject(vecInt vector_objects);
+bool vectorHasPlayerBlockingObject(vecInt vector_objects);
+bool CollidedWithEnemy(vecInt vector_objects);
+void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow);
+
+// Movimentação
+void MovePlayer();
+void MoveBlock(int block_index);
+void MoveEnemies();
+void MoveJet(int jet_index);
+void MoveBeachBall(int ball_index);
+void MoveVolleyBall(int ball_index);
+
+// Auxiliares para desenho
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
-void DrawPlayer(vec4 position, float angle_y, float angle_x, float scale);
-Level LoadLevelFromFile(string filepath);
-void DrawMapObjects();
-void RegisterLevelObjects(Level level);
-void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
-void RegisterObjectInMapVector(char tile_type, float x, float z);
-float GetTileToleranceValue(int object_type);
-int GetVectorObjectType(vecInt vector_objects, int type);
-vecInt GetObjectsCollidingWithPlayer(vec4 player_position);
-bool CollidedWithEnemy(vecInt vector_objects);
-bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball = false);
-void ClearInventory();
-void MovePlayer();
-void MoveEnemies();
+void ComputeNormals(ObjModel* model);
+void BuildTrianglesAndAddToVirtualScene(ObjModel* model);
+
+// Sistema de partículas (não funcional)
 void AnimateParticles();
-float MaxFloat2(float a, float b);
+void GenerateParticles(int amount, vec4 position, vec3 object_size);
+void DrawParticles();
 
-int RenderMainMenu(GLFWwindow* window);
-int RenderLevel(int level_number, GLFWwindow* window);
-int RenderLevelSelection(GLFWwindow* window);
+// Carregamento de arquivos
+Level LoadLevelFromFile(string filepath);
+void LoadTextureImage(const char* filename);
+void LoadShadersFromFiles();
+GLuint LoadShader_Vertex(const char* filename);
+GLuint LoadShader_Fragment(const char* filename); 
+void LoadShader(const char* filename, GLuint shader_id);
+void LoadSoundFromFile(const char* path, sf::SoundBuffer * buffer);
+void LoadMusicFromFile(const char* path, sf::Music * buffer);
 
-vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant);
+// Audio e música
+void PlayLevelMusic(int level_number);
+void PlayMenuMusic();
+void StopAllMusic();
+void PlaySound(sf::SoundBuffer * buffer);
+
+// GPU
+GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id);
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod);
+void ErrorCallback(int error, const char* description);
 void PrintGPUInfoInTerminal();
-void ShowInventory(GLFWwindow* window);
+
+// Texto
+void TextRendering_ShowFramesPerSecond(GLFWwindow* window) ;
+void PrintObjModelInfo(ObjModel* model);
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
@@ -181,20 +227,6 @@ void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y
 void TextRendering_PrintVector(GLFWwindow* window, vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, vec4 v, float x, float y, float scale = 1.0f);
-
-// Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
-// outras informações do programa. Definidas após main().
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, vec4 p_model);
-void TextRendering_ShowProjection(GLFWwindow* window);
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
-
-// Funções callback para comunicação com o sistema operacional e interação do
-// usuário. Veja mais comentários nas definições das mesmas, abaixo.
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-void ErrorCallback(int error, const char* description);
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 
 /***************************************/
 /** CONSTANTES ESPECÍFICAS DE OBJETOS **/
@@ -360,107 +392,6 @@ GLint yellow_particle_color_uniform;
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
-// Carrega um arquivo de som
-void LoadSoundFromFile(const char* path, sf::SoundBuffer * buffer) {
-    printf("Carregando som \"%s\"... ", path);
-    if (!buffer->loadFromFile(path)) {
-        printf("Falha ao carregar som!\n");
-        std::exit(EXIT_FAILURE);
-    }
-    else printf(" OK!\n");
-}
-
-// Carrega um arquivo de música
-void LoadMusicFromFile(const char* path, sf::Music * buffer) {
-    printf("Carregando música \"%s\"... ", path);
-    if (!buffer->openFromFile(path)) {
-        printf("Falha ao carregar música!\n");
-        std::exit(EXIT_FAILURE);
-    }
-    else {
-        printf(" OK!\n");
-        buffer->setLoop(true);
-    }
-}
-
-// Toca a música de um nível
-void PlayLevelMusic(int level_number) {
-    if (!g_MusicOn)
-        return;
-
-    menumusic.stop();
-    switch(level_number){
-        case 1:
-        case 2:{
-            techmusic.play();
-            break;
-        }
-        case 3:
-        case 5:{
-            naturemusic.play();
-            break;
-        }
-        case 4:
-        case 9:{
-            watermusic.play();
-            break;
-        }
-        case 6:
-        case 8:{
-            spookymusic.play();
-            break;
-        }
-        case 7:
-        case 10:{
-            spacemusic.play();
-            break;
-        }
-    }
-}
-
-// Toca a música do menu
-void PlayMenuMusic() {
-    if (!g_MusicOn)
-        return;
-
-    if (techmusic.getStatus() == 2)
-        techmusic.stop();
-    if (naturemusic.getStatus() == 2)
-        naturemusic.stop();
-    if (watermusic.getStatus() == 2)
-        watermusic.stop();
-    if (spacemusic.getStatus() == 2)
-        spacemusic.stop();
-    if (spookymusic.getStatus() == 2)
-        spookymusic.stop();
-    menumusic.play();
-}
-
-// Para todas as músicas
-void StopAllMusic() {
-    if (techmusic.getStatus() == 2)
-        techmusic.stop();
-    if (naturemusic.getStatus() == 2)
-        naturemusic.stop();
-    if (watermusic.getStatus() == 2)
-        watermusic.stop();
-    if (spacemusic.getStatus() == 2)
-        spacemusic.stop();
-    if (spookymusic.getStatus() == 2)
-        spookymusic.stop();
-    if (menumusic.getStatus() == 2)
-        menumusic.stop(); 
-}
-
-// Toca um som
-void PlaySound(sf::SoundBuffer * buffer) {
-    if (!g_SoundsOn)
-        return;
-
-    sound.setBuffer(*buffer);
-    sound.play();
-}
-
 int main(int argc, char* argv[])
 {
     // Inicializações
@@ -623,6 +554,40 @@ int main(int argc, char* argv[])
     // Fim do programa
     return 0;
 }
+
+////////////////////////////////
+// FUNÇÕES AUXILIARES SIMPLES //
+////////////////////////////////
+
+// Função que verifica se um valor está dentro de um conjunto de valores
+// Útil para simplificar ifs
+template <typename T>
+bool isIn(const T& val, const std::initializer_list<T>& list) {
+    for (const auto& i : list) {
+        if (val == i) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Retorna o maior valor (float) dentre dois valores
+float MaxFloat2(float a, float b) {
+    if (a < b)
+        return b;
+    else return a;
+}
+
+// Converte um vetor para coordenadas homogêneas
+vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
+    if (isVectorPosVector)
+        return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 1.0f);
+    else return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 0.0f);
+}
+
+////////////////////////////
+// RENDERIZAÇÕES DE TELAS //
+////////////////////////////
 
 // Renderiza menu principal
 int RenderMainMenu(GLFWwindow* window) {
@@ -830,10 +795,12 @@ int RenderLevelSelection(GLFWwindow* window) {
 	return -1;
 }
 
+// Ajusta câmera FPS
 vec4 AdjustFPSCamera(vec4 position) {
     return vec4(position.x, position.y + 0.5f, position.z, 1.0f);
 }
 
+// Renderiza nível dado
 int RenderLevel(int level_number, GLFWwindow* window) {
 	// Reset variables
     map_objects.clear();
@@ -844,6 +811,14 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 	g_DeathByEnemy = false;
     g_ItemAngleY = 0;
 	g_useFirstPersonCamera = false;
+    straight_vector_sign = 1.0f;
+    sideways_vector_sign = 0.0f;
+    player_direction = vec4(0.0f, 0.0f, 1.0f, 0.0f);
+    g_CameraTheta = PI;
+    g_CameraPhi = 0.0f;
+    g_CameraDistance = 2.5f;
+    camera_position_c  = player_position;
+    camera_xz_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f);
 
     // Variável de controle da animação de morte
     int death_timer = 1000;
@@ -922,6 +897,8 @@ int RenderLevel(int level_number, GLFWwindow* window) {
             }
             if (g_DeathByWater)
                 player_position[1] -= 0.01f;
+            else if (g_DeathByEnemy && death_timer >= 990)
+                PlaySound(&deathsound);
         }           
         else MovePlayer();
 
@@ -939,10 +916,8 @@ int RenderLevel(int level_number, GLFWwindow* window) {
             bodyangle_X = MaxFloat2(death_timer * 0.002f - 2.0f, -PI/2);
 
         // Desenha player
-        DrawPlayer(player_position, bodyangle_Y + PI/2, bodyangle_X, 0.3f);
-
-        if (CollidedWithEnemy(GetObjectsCollidingWithPlayer(player_position)))
-        	g_DeathByEnemy = true;
+        if(!g_useFirstPersonCamera)
+            DrawPlayer(player_position, bodyangle_Y + PI/2, bodyangle_X, 0.3f);
 
         ///////////////////
         // RESTO DO MAPA //
@@ -985,38 +960,6 @@ int RenderLevel(int level_number, GLFWwindow* window) {
     return -1;
 }
 
-// Função que verifica se um valor está dentro de um conjunto de valores
-// Útil para simplificar ifs
-template <typename T>
-bool isIn(const T& val, const std::initializer_list<T>& list) {
-    for (const auto& i : list) {
-        if (val == i) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Retorna o maior valor (float) dentre dois valores
-float MaxFloat2(float a, float b) {
-    if (a < b)
-        return b;
-    else return a;
-}
-
-// Converte um vetor para coordenadas homogêneas
-vec4 VectorSetHomogeneous(vec3 nonHomogVector, bool isVectorPosVector) {
-	if (isVectorPosVector)
-		return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 1.0f);
-	else return vec4(nonHomogVector.x, nonHomogVector.y, nonHomogVector.z, 0.0f);
-}
-
-// Dado um objeto e seu tamanho, retorna as coordenadas onde ele "começa"
-// Necessário pois os objetos do jogo contém a posição central deles
-vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
-	return object_position - VectorSetHomogeneous(object_size, false) / 2.0f;
-}
-
 // Mostra o inventário do jogador na tela
 void ShowInventory(GLFWwindow* window) {
 	float pad = TextRendering_LineHeight(window);
@@ -1035,59 +978,13 @@ void ShowInventory(GLFWwindow* window) {
     TextRendering_PrintString(window, invstring, -1.0f+pad/5, 1.0f-pad, 1.0f);
 }
 
-///////////////////////////
-// SISTEMA DE PARTÍCULAS //
-///////////////////////////
+//////////////////////////////
+// CONFIGURAÇÃO DE UM NÍVEL //
+//////////////////////////////
 
-// Animação
-void AnimateParticles() {
-	vecInt particles_to_delete;
-
-	for(unsigned int i = 0; i < particles.size(); i++) {
-		particles[i].position.y = particles[i].position.y + particles[i].speed;
-		particles[i].life =  particles[i].life - particles[i].speed;
-		if (particles[i].life <= 0)
-			particles_to_delete.push_back(i);
-	}
-
-	for(unsigned int i = 0; i < particles_to_delete.size(); i++) {
-		particles.erase(particles.begin() + particles_to_delete[i]);
-	}
-}
-
-// Geração
-void GenerateParticles(int amount, vec4 position, vec3 object_size) {
-	for (int i = 0; i < amount; i++) {
-		Particle new_particle;
-		float x_start = position.x - object_size.x / 2;
-		float x_end = position.x + object_size.x / 2;
-		float z_start = position.z - object_size.z / 2;
-		float z_end = position.z + object_size.z / 2;
-		float pos_x = x_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(x_end-x_start)));
-		float pos_z = z_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(z_end-z_start)));
-		float pos_y = position.y;
-		float yellow = 0.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.6-0.0)));
-		new_particle.position = vec4(pos_x, pos_y, pos_z, 1.0f);
-		new_particle.speed = 0.02f;
-		new_particle.color = vec3(1.0f, yellow, 0.0f);
-		new_particle.life = 1.0f;
-		new_particle.size = 0.01f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.05f-0.01f)));
-		particles.push_back(new_particle);
-	}
-}
-
-// Desenho
-// Talvez precisamos mudar isso.
-void DrawParticles() {
-	glDisable(GL_CULL_FACE);
-	for(unsigned int i = 0; i < particles.size(); i++) {
-		glUniform1i(yellow_particle_color_uniform, particles[i].color.y * 10);
-
-		glm::mat4 model = Matrix_Translate(particles[i].position.x, particles[i].position.y, particles[i].position.z)
-        				* Matrix_Scale(particles[i].size, particles[i].size, particles[i].size);
-
-        DrawVirtualObject("sphere", PARTICLE, model);
-	}
+void ClearInventory() {
+    player_inventory.keys = {0,0,0,0};
+    player_inventory.cows = 0;
 }
 
 // Função que registra os objetos do nível com base na sua planta
@@ -1294,6 +1191,32 @@ void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const cha
     map_objects.push_back(new_object);
 }
 
+// Função que encontra as coordenadas do spawn do jogador na planta do mapa
+vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
+    int map_height = plant.size();
+    int map_width = plant[0].size();
+    float center_x = (map_width-1)/2.0f;
+    float center_z = (map_height-1)/2.0f;
+
+    for(int line = 0; line < map_height; line++) {
+        for(int col = 0; col < map_width; col++) {
+            if(plant[line][col] == 'P') {
+                float x = -(center_x - col);
+                float z = -(center_z - line);
+
+                return vec4(x, -0.5f, z, 1.0f);
+            }
+        }
+    }
+
+    // Caso o spawn não seja encontrado, spawna o player no centro por padrão
+    return vec4(0.5f, 0.0f, 0.5f, 1.0f);
+}
+
+/////////////
+// DESENHO //
+/////////////
+
 // Função que desenha os objetos na cena (com base no vetor de objetos)
 void DrawMapObjects() {
     for(unsigned int i = 0; i < map_objects.size(); i++) {
@@ -1448,6 +1371,16 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
+//////////////
+// COLISÕES //
+//////////////
+
+// Dado um objeto e seu tamanho, retorna as coordenadas onde ele "começa"
+// Necessário pois os objetos do jogo contém a posição central deles
+vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
+    return object_position - VectorSetHomogeneous(object_size, false) / 2.0f;
+}
+
 // Dado um tipo de objeto, retorna o valor de tolerância
 // Usado para a função de colisão com o player
 float GetTileToleranceValue(int object_type) {
@@ -1536,6 +1469,37 @@ vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
     return GetObjectsCollidingWithObject(-1, player_position);
 }
 
+// Dado um vetor de objetos, retorna o primeiro objeto de um dado tipo
+int GetVectorObjectType(vecInt vector_objects, int type) {
+    unsigned int curr_index = 0;
+
+    while(curr_index < vector_objects.size()) {
+        int current_obj_index = vector_objects[curr_index];
+
+        if (map_objects[current_obj_index].object_type == type)
+            return current_obj_index;
+        curr_index++;
+    }
+
+    return -1;
+}
+
+// Alternativa para procurar mais de um tipo de objeto
+int GetVectorObjectType(vecInt vector_objects, vecInt types) {
+    unsigned int curr_index = 0;
+
+    while(curr_index < vector_objects.size()) {
+        int current_obj_index = vector_objects[curr_index];
+
+        for(unsigned int i = 0; i < types.size(); i++)
+            if (map_objects[current_obj_index].object_type == types[i])
+                return current_obj_index;
+        curr_index++;
+    }
+
+    return -1;
+}
+
 // Dado um vetor, testa se existe um objeto que possa bloquear
 //  o movimento de outro objeto (cubo de sujeira ou inimigos p. ex.)
 bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
@@ -1558,206 +1522,114 @@ bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
 	return false;
 }
 
+// Função auxiliar, similar acima, mas para a bola de vôlei
 bool vectorHasVolleyballBlockingObject(vecInt vector_objects) {
 	return vectorHasObjectBlockingObject(vector_objects, true);
 }
 
-void MoveJet(int jet_index) {
-    // Calcula para onde o jet deve andar
-	vec4 target_pos = map_objects[jet_index].object_position;
-	switch(map_objects[jet_index].direction) {
-		case 0: {
-			target_pos.z += MOVEMENT_AMOUNT;
-			break;
-		}
-		case 1: {
-			target_pos.x += MOVEMENT_AMOUNT;
-			break;
-		}
-		case 2: {
-			target_pos.z -= MOVEMENT_AMOUNT;
-			break;
-		}
-		case 3: {
-			target_pos.x -= MOVEMENT_AMOUNT;
-			break;
-		}
-	}
+// Testa se um vetor de objetos possui algum objeto que possa bloquear
+//  o movimento do jogador
+bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
+    unsigned int curr_index = 0;
 
-    // Testa colisões
-	vecInt collided_objects = GetObjectsCollidingWithObject(jet_index, target_pos);
-	if (!vectorHasObjectBlockingObject(collided_objects)) {
-		map_objects[jet_index].object_position = target_pos;
+    // Primeiro verificamos se existem paredes
+    while (curr_index < vector_objects.size()) {
+        int curr_obj_index = vector_objects[curr_index];
+        if (map_objects[curr_obj_index].object_type == WALL)
+            return true;
+        curr_index++;
+    }
 
-		// Testa se atingiu fogo. Se atingiu, morre
-		int fire_index = GetVectorObjectType(collided_objects, FIRE);
-		if (fire_index >= 0) {
-		    map_objects.erase(map_objects.begin() + jet_index);
-	    }
-	}
-    // Se colidiu, recomputa direção
-	else map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
+    // Depois verificamos portas
+    // Só podemos destrancar portas que tiverem se o player não colidir com
+    //   NENHUM outro sólido bloqueante
+    // Por isso, armazenamos todas as que ele pode trancar e, se não existir,
+    //   destranca posteriormente.
+    vecInt unlocked_red_doors;
+    vecInt unlocked_green_doors;
+    vecInt unlocked_blue_doors;
+    vecInt unlocked_yellow_doors;
+
+    curr_index = 0;
+    while (curr_index < vector_objects.size()) {
+        int curr_obj_index = vector_objects[curr_index];
+
+        if (map_objects[curr_obj_index].object_type == DOOR_RED)
+            if (player_inventory.keys.red == 0)
+                return true;
+            else unlocked_red_doors.push_back(curr_obj_index);
+        else if (map_objects[curr_obj_index].object_type == DOOR_GREEN)
+            if (player_inventory.keys.green == 0)
+                return true;
+            else unlocked_green_doors.push_back(curr_obj_index);
+        else if (map_objects[curr_obj_index].object_type == DOOR_BLUE)
+            if (player_inventory.keys.blue == 0)
+                return true;
+            else unlocked_blue_doors.push_back(curr_obj_index);
+        else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW)
+            if (player_inventory.keys.yellow == 0)
+                return true;
+            else unlocked_yellow_doors.push_back(curr_obj_index);
+
+        curr_index++;
+    }
+
+    // Depois verificamos se atingiu a vaca do final do jogo
+    curr_index = 0;
+    while (curr_index < vector_objects.size()) {
+        int curr_obj_index = vector_objects[curr_index];
+        if (map_objects[curr_obj_index].object_type == COW) {
+            if (player_inventory.cows == g_LevelCowAmount) {
+                PlaySound(&winsound);
+                g_MapEnded = true;
+                return false;
+            } else
+                return true;
+        }
+
+        curr_index++;
+    }
+
+    // Depois verificamos se existem blocos que podem ser movimentados
+    bool found_dirtblocks = false;
+    curr_index = 0;
+    while (curr_index < vector_objects.size()) {
+        int curr_obj_index = vector_objects[curr_index];
+        if (map_objects[curr_obj_index].object_type == DIRTBLOCK) {
+            MoveBlock(curr_obj_index);
+            found_dirtblocks = true;
+        }
+        curr_index++;
+    }
+
+    // Se existem blocos, o player não pode ser movimentado (embora a chamada para mover os blocos tenha ocorrido)
+    if (found_dirtblocks)
+        return true;
+    else {
+        // Se o player não foi bloqueado, destranca quaisquer portas existentes
+        UnlockDoors(unlocked_red_doors, unlocked_green_doors, unlocked_blue_doors, unlocked_yellow_doors);
+        return false;
+    }
 }
 
-void MoveBeachBall(int ball_index) {
-	vec4 target_pos = map_objects[ball_index].object_position;
-
-	switch(map_objects[ball_index].direction) {
-		case 0: {
-			target_pos.z += MOVEMENT_AMOUNT;
-			break;
-		}
-		case 1: {
-			target_pos.x += MOVEMENT_AMOUNT;
-			break;
-		}
-		case 2: {
-			target_pos.z -= MOVEMENT_AMOUNT;
-			break;
-		}
-		case 3: {
-			target_pos.x -= MOVEMENT_AMOUNT;
-			break;
-		}
-	}
-
-	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
-
-	if (!vectorHasObjectBlockingObject(collided_objects)) {
-		map_objects[ball_index].object_position = target_pos;
-
-		// Testa se atingiu fogo. Se atingiu, morre
-		int fire_index = GetVectorObjectType(collided_objects, FIRE);
-		int water_index = GetVectorObjectType(collided_objects, WATER);
-		if ((fire_index >= 0) || (water_index >= 0)) {
-		    map_objects.erase(map_objects.begin() + ball_index);
-	    }
-	}
-	else map_objects[ball_index].direction = (map_objects[ball_index].direction + 2) % 4;
-}
-
-void MoveVolleyBall(int ball_index) {
-	vec4 target_pos = map_objects[ball_index].object_position;
-
-	target_pos.y -= map_objects[ball_index].gravity;
-	if (map_objects[ball_index].gravity < 0.2f)
-		map_objects[ball_index].gravity += 0.005f;
-
-	vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
-
-	if (!vectorHasVolleyballBlockingObject(collided_objects)) {
-		map_objects[ball_index].object_position = target_pos;
-
-		// Testa se atingiu fogo. Se atingiu, morre
-		int fire_index = GetVectorObjectType(collided_objects, FIRE);
-		int water_index = GetVectorObjectType(collided_objects, WATER);
-		if ((fire_index >= 0) || (water_index >= 0)) {
-		    map_objects.erase(map_objects.begin() + ball_index);
-	    }
-	}
-	else {
-        sound.setBuffer(ball1sound);
-        sound.play();
-		map_objects[ball_index].gravity = -0.2f;
-	}
-}
-
-void MoveEnemies() {
-	for (unsigned int i = 0; i < map_objects.size(); i++) {
-		if (map_objects[i].object_type == JET)
-			MoveJet(i);
-		else if (map_objects[i].object_type == BEACHBALL)
-			MoveBeachBall(i);
-		else if (map_objects[i].object_type == VOLLEYBALL)
-			MoveVolleyBall(i);
-	}
-}
-
-// Dado um vetor de objetos, retorna o primeiro objeto de um dado tipo
-int GetVectorObjectType(vecInt vector_objects, int type) {
-	unsigned int curr_index = 0;
-
-	while(curr_index < vector_objects.size()) {
-		int current_obj_index = vector_objects[curr_index];
-
-		if (map_objects[current_obj_index].object_type == type)
-			return current_obj_index;
-		curr_index++;
-	}
-
-	return -1;
-}
-
+// Testa se colidiu com inimigos
 bool CollidedWithEnemy(vecInt vector_objects) {
-	unsigned int curr_index = 0;
-
-	while(curr_index < vector_objects.size()) {
-		int current_obj_index = vector_objects[curr_index];
-
-		if (map_objects[current_obj_index].object_type == JET
-			|| map_objects[current_obj_index].object_type == BEACHBALL
-			|| map_objects[current_obj_index].object_type == VOLLEYBALL)
-			return true;
-		curr_index++;
-	}
-
-	return false;
-}
-
-void ClearInventory() {
-    player_inventory.keys = {0,0,0,0};
-    player_inventory.cows = 0;
-}
-
-// Função que move um bloco
-// Ao mover o bloco, testa-se colisão também.
-void MoveBlock(int block_index) {
-	vec4 direction = map_objects[block_index].object_position - player_position;
-	direction.y = 0.0f;
-
-	float angle = acos(dotproduct(direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(direction));
-	if (direction.z > 0.0f)
-		angle = - angle;
-	angle = angle + PI;
-
-	vec4 target_pos = map_objects[block_index].object_position;
-
-	if (angle >= PI/4 && angle < 3*PI/4) {
-		target_pos.z += MOVEMENT_AMOUNT;
-	} else if (angle >= 3*PI/4 && angle < 5*PI/4) {
-		target_pos.x += MOVEMENT_AMOUNT;
-	} else if (angle >= 5*PI/4 && angle < 7*PI/4) {
-		target_pos.z -= MOVEMENT_AMOUNT;
-	} else {
-		target_pos.x -= MOVEMENT_AMOUNT;
-	}
-
-	vecInt collided_objects = GetObjectsCollidingWithObject(block_index, target_pos);
-
-	if (!vectorHasObjectBlockingObject(collided_objects)) {
-		map_objects[block_index].object_position = target_pos;
-
-		// Testa se atingiu água. Se atingiu, transforma-a em sujeira.
-		int water_index = GetVectorObjectType(collided_objects, WATER);
-		if (water_index >= 0) {
-            sound.setBuffer(splashsound);
-        	sound.play();
-		    map_objects[block_index].object_position = map_objects[water_index].object_position;
-		    map_objects[water_index].object_type = DIRT;
-		    map_objects.erase(map_objects.begin() + block_index);
-	    }
-	}
+    vecInt enemies = {JET, BEACHBALL, VOLLEYBALL};
+    return (GetVectorObjectType(vector_objects, enemies) >= 0);
 }
 
 // Destranca portas
 void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
-    if(red.size() + green.size() + blue.size() + yellow.size() > 0) {
-        sound.setBuffer(doorsound);
-        sound.play();
-    }
+    // Se não existem portas, retorna
+    if(red.size() + green.size() + blue.size() + yellow.size() == 0)
+        return;
+    
+    PlaySound(&doorsound);
+
+    // Remove os itens dos vetores do fim pro início, pra não ter problema de remover coisas erradas
 
 	for (unsigned int i = 0; i < yellow.size(); i++) {
-		player_inventory.keys.yellow--;
+        // Chave amarela é permanente
 		map_objects.erase(map_objects.begin() + (yellow[yellow.size() - 1 - i]));
 	}
 
@@ -1777,85 +1649,9 @@ void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
 	}
 }
 
-// Testa se um vetor de objetos possui algum objeto que possa bloquear
-//  o movimento do jogador
-bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
-	unsigned int curr_index = 0;
-	bool found_dirtblocks = false;
-	vecInt unlocked_red_doors;
-	vecInt unlocked_green_doors;
-	vecInt unlocked_blue_doors;
-	vecInt unlocked_yellow_doors;
-
-	// Primeiro verificamos se existem paredes
-	while (curr_index < vector_objects.size()) {
-		int curr_obj_index = vector_objects[curr_index];
-		if (map_objects[curr_obj_index].object_type == WALL)
-			return true;
-		curr_index++;
-	}
-
-	// Depois verificamos portas
-	curr_index = 0;
-	while (curr_index < vector_objects.size()) {
-		int curr_obj_index = vector_objects[curr_index];
-
-		if (map_objects[curr_obj_index].object_type == DOOR_RED)
-			if (player_inventory.keys.red == 0)
-				return true;
-			else unlocked_red_doors.push_back(curr_obj_index);
-		else if (map_objects[curr_obj_index].object_type == DOOR_GREEN)
-			if (player_inventory.keys.green == 0)
-				return true;
-			else unlocked_green_doors.push_back(curr_obj_index);
-		else if (map_objects[curr_obj_index].object_type == DOOR_BLUE)
-			if (player_inventory.keys.blue == 0)
-				return true;
-			else unlocked_blue_doors.push_back(curr_obj_index);
-		else if (map_objects[curr_obj_index].object_type == DOOR_YELLOW)
-			if (player_inventory.keys.yellow == 0)
-				return true;
-			else unlocked_yellow_doors.push_back(curr_obj_index);
-
-		curr_index++;
-	}
-
-	// Depois verificamos se atingiu a vaca do final do jogo
-	curr_index = 0;
-	while (curr_index < vector_objects.size()) {
-		int curr_obj_index = vector_objects[curr_index];
-		if (map_objects[curr_obj_index].object_type == COW) {
-			if (player_inventory.cows == g_LevelCowAmount) {
-			    sound.setBuffer(winsound);
-                sound.play();
-				g_MapEnded = true;
-				return false;
-			} else
-				return true;
-		}
-
-		curr_index++;
-	}
-
-	// Depois verificamos se existem blocos que podem ser movimentados
-	curr_index = 0;
-	while (curr_index < vector_objects.size()) {
-		int curr_obj_index = vector_objects[curr_index];
-		if (map_objects[curr_obj_index].object_type == DIRTBLOCK) {
-			MoveBlock(curr_obj_index);
-			found_dirtblocks = true;
-		}
-		curr_index++;
-	}
-
-	// Se existem blocos, o player não pode ser movimentado (embora a chamada para mover os blocos tenha ocorrido)
-	if (found_dirtblocks)
-		return true;
-	else {
-		UnlockDoors(unlocked_red_doors, unlocked_green_doors, unlocked_blue_doors, unlocked_yellow_doors);
-		return false;
-	}
-}
+/////////////////////////////
+// MOVIMENTAÇÃO DE OBJETOS //
+/////////////////////////////
 
 // Função que calcula a posição nova do jogador (ao se movimentar)
 void MovePlayer() {
@@ -1927,8 +1723,6 @@ void MovePlayer() {
 
 		    if (CollidedWithEnemy(collided_objects)) {
 		    	g_DeathByEnemy = true;
-		    	sound.setBuffer(deathsound);
-                sound.play();
 		    }
 		    else if (GetVectorObjectType(collided_objects, WATER) >= 0) {
 		        g_DeathByWater = true;
@@ -1964,27 +1758,181 @@ void MovePlayer() {
 	}
 }
 
-// Função que encontra as coordenadas do spawn do jogador na planta do mapa
-vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<char>> plant) {
-    int map_height = plant.size();
-    int map_width = plant[0].size();
-    float center_x = (map_width-1)/2.0f;
-    float center_z = (map_height-1)/2.0f;
+// Função que move um bloco
+// Ao mover o bloco, testa-se colisão também.
+void MoveBlock(int block_index) {
+    vec4 direction = map_objects[block_index].object_position - player_position;
+    direction.y = 0.0f;
 
-    for(int line = 0; line < map_height; line++) {
-        for(int col = 0; col < map_width; col++) {
-            if(plant[line][col] == 'P') {
-                float x = -(center_x - col);
-                float z = -(center_z - line);
+    vec4 target_pos = map_objects[block_index].object_position;
 
-                return vec4(x, -0.5f, z, 1.0f);
-            }
+    // Computa a direção para onde se movimentar o bloco
+    float angle = acos(dotproduct(direction, vec4(1.0f,0.0f,0.0f,0.0f))/norm(direction));
+    if (direction.z > 0.0f)
+        angle = - angle;
+    angle = angle + PI;
+
+    if (angle >= PI/4 && angle < 3*PI/4) {
+        target_pos.z += MOVEMENT_AMOUNT;
+    } else if (angle >= 3*PI/4 && angle < 5*PI/4) {
+        target_pos.x += MOVEMENT_AMOUNT;
+    } else if (angle >= 5*PI/4 && angle < 7*PI/4) {
+        target_pos.z -= MOVEMENT_AMOUNT;
+    } else {
+        target_pos.x -= MOVEMENT_AMOUNT;
+    }
+
+    vecInt collided_objects = GetObjectsCollidingWithObject(block_index, target_pos);
+
+    if (!vectorHasObjectBlockingObject(collided_objects)) {
+        map_objects[block_index].object_position = target_pos;
+
+        // Testa se atingiu água. Se atingiu, transforma-a em sujeira.
+        int water_index = GetVectorObjectType(collided_objects, WATER);
+        if (water_index >= 0) {
+            PlaySound(&splashsound);
+            map_objects[block_index].object_position = map_objects[water_index].object_position;
+            map_objects[water_index].object_type = DIRT;
+            map_objects.erase(map_objects.begin() + block_index);
+        }
+    }
+}
+
+// Movimenta todos os inimigos em um nível
+void MoveEnemies() {
+    // Varre o vetor de objetos, movimentando inimigos existentes
+    for (unsigned int i = 0; i < map_objects.size(); i++) {
+        if (map_objects[i].object_type == JET)
+            MoveJet(i);
+        else if (map_objects[i].object_type == BEACHBALL)
+            MoveBeachBall(i);
+        else if (map_objects[i].object_type == VOLLEYBALL)
+            MoveVolleyBall(i);
+    }
+}
+
+// Função de movimentação do jato
+void MoveJet(int jet_index) {
+    // Calcula para onde o jet deve andar
+    vec4 target_pos = map_objects[jet_index].object_position;
+    switch(map_objects[jet_index].direction) {
+        case 0: {
+            target_pos.z += MOVEMENT_AMOUNT;
+            break;
+        }
+        case 1: {
+            target_pos.x += MOVEMENT_AMOUNT;
+            break;
+        }
+        case 2: {
+            target_pos.z -= MOVEMENT_AMOUNT;
+            break;
+        }
+        case 3: {
+            target_pos.x -= MOVEMENT_AMOUNT;
+            break;
         }
     }
 
-    // Caso o spawn não seja encontrado, spawna o player no centro por padrão
-    return vec4(0.5f, 0.0f, 0.5f, 1.0f);
+    // Testa colisões
+    vecInt collided_objects = GetObjectsCollidingWithObject(jet_index, target_pos);
+    if (!vectorHasObjectBlockingObject(collided_objects)) {
+        map_objects[jet_index].object_position = target_pos;
+
+        // Se colidiu com o player, mata ele
+        vec3 player_size = vec3(0.0f, 0.6f, 0.0f);
+        if (BBoxCollision(player_position, target_pos, player_size, map_objects[jet_index].object_size, 0.0f))
+            g_DeathByEnemy = true;
+    
+        // Testa se atingiu fogo. Se atingiu, morre
+        int fire_index = GetVectorObjectType(collided_objects, FIRE);
+        if (fire_index >= 0) {
+            map_objects.erase(map_objects.begin() + jet_index);
+        }
+    }
+    // Se colidiu, recomputa direção
+    else map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
 }
+
+// Função de movimentação da bola de praia
+// Muito similar acima, mas possui algumas modificações e por isso
+//  não foi refatorada (direção, morte em água)
+void MoveBeachBall(int ball_index) {
+    vec4 target_pos = map_objects[ball_index].object_position;
+
+    switch(map_objects[ball_index].direction) {
+        case 0: {
+            target_pos.z += MOVEMENT_AMOUNT;
+            break;
+        }
+        case 1: {
+            target_pos.x += MOVEMENT_AMOUNT;
+            break;
+        }
+        case 2: {
+            target_pos.z -= MOVEMENT_AMOUNT;
+            break;
+        }
+        case 3: {
+            target_pos.x -= MOVEMENT_AMOUNT;
+            break;
+        }
+    }
+
+    vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
+
+    if (!vectorHasObjectBlockingObject(collided_objects)) {
+        map_objects[ball_index].object_position = target_pos;
+
+        // Se colidiu com o player, mata ele
+        vec3 player_size = vec3(0.0f, 0.6f, 0.0f);
+        if (BBoxCollision(player_position, target_pos, player_size, map_objects[ball_index].object_size, 0.0f))
+            g_DeathByEnemy = true;
+
+        // Testa se atingiu fogo ou água. Se atingiu, morre.
+        int hazard_index = GetVectorObjectType(collided_objects, vecInt(FIRE,WATER));
+        if (hazard_index >= 0) {
+            map_objects.erase(map_objects.begin() + ball_index);
+        }
+    }
+    else map_objects[ball_index].direction = (map_objects[ball_index].direction + 2) % 4;
+}
+
+// Função de movimentação da bola de vôlei
+void MoveVolleyBall(int ball_index) {
+    vec4 target_pos = map_objects[ball_index].object_position;
+
+    // Ajuste da aceleração de gravidade para a bola
+    target_pos.y -= map_objects[ball_index].gravity;
+    if (map_objects[ball_index].gravity < 0.2f)
+        map_objects[ball_index].gravity += 0.005f;
+
+    vecInt collided_objects = GetObjectsCollidingWithObject(ball_index, target_pos);
+
+    if (!vectorHasVolleyballBlockingObject(collided_objects)) {
+        map_objects[ball_index].object_position = target_pos;
+
+        // Se colidiu com o player, mata ele
+        vec3 player_size = vec3(0.0f, 0.6f, 0.0f);
+        if (BBoxCollision(player_position, target_pos, player_size, map_objects[ball_index].object_size, 0.0f)) 
+            g_DeathByEnemy = true;
+
+        // Testa se atingiu fogo ou água. Se atingiu, morre.
+        int hazard_index = GetVectorObjectType(collided_objects, vecInt(FIRE,WATER));
+        if (hazard_index >= 0) {
+            map_objects.erase(map_objects.begin() + ball_index);
+        }
+    }
+    else {
+        // Quica
+        PlaySound(&ball1sound);
+        map_objects[ball_index].gravity = -0.2f;
+    }
+}
+
+/////////////////////////////
+// AUXILIARES PARA DESENHO //
+/////////////////////////////
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
 void PushMatrix(glm::mat4 M) {
@@ -2198,6 +2146,65 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model) {
 
     glBindVertexArray(0);
 }
+
+///////////////////////////
+// SISTEMA DE PARTÍCULAS //
+///////////////////////////
+
+// Animação
+void AnimateParticles() {
+    vecInt particles_to_delete;
+
+    for(unsigned int i = 0; i < particles.size(); i++) {
+        particles[i].position.y = particles[i].position.y + particles[i].speed;
+        particles[i].life =  particles[i].life - particles[i].speed;
+        if (particles[i].life <= 0)
+            particles_to_delete.push_back(i);
+    }
+
+    for(unsigned int i = 0; i < particles_to_delete.size(); i++) {
+        particles.erase(particles.begin() + particles_to_delete[i]);
+    }
+}
+
+// Geração
+void GenerateParticles(int amount, vec4 position, vec3 object_size) {
+    for (int i = 0; i < amount; i++) {
+        Particle new_particle;
+        float x_start = position.x - object_size.x / 2;
+        float x_end = position.x + object_size.x / 2;
+        float z_start = position.z - object_size.z / 2;
+        float z_end = position.z + object_size.z / 2;
+        float pos_x = x_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(x_end-x_start)));
+        float pos_z = z_start + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(z_end-z_start)));
+        float pos_y = position.y;
+        float yellow = 0.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.6-0.0)));
+        new_particle.position = vec4(pos_x, pos_y, pos_z, 1.0f);
+        new_particle.speed = 0.02f;
+        new_particle.color = vec3(1.0f, yellow, 0.0f);
+        new_particle.life = 1.0f;
+        new_particle.size = 0.01f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.05f-0.01f)));
+        particles.push_back(new_particle);
+    }
+}
+
+// Desenho
+// Talvez precisamos mudar isso.
+void DrawParticles() {
+    glDisable(GL_CULL_FACE);
+    for(unsigned int i = 0; i < particles.size(); i++) {
+        glUniform1i(yellow_particle_color_uniform, particles[i].color.y * 10);
+
+        glm::mat4 model = Matrix_Translate(particles[i].position.x, particles[i].position.y, particles[i].position.z)
+                        * Matrix_Scale(particles[i].size, particles[i].size, particles[i].size);
+
+        DrawVirtualObject("sphere", PARTICLE, model);
+    }
+}
+
+///////////////////
+// CARREGAMENTOS //
+///////////////////
 
 // Função que carrega um nível a partir de um arquivo (parser)
 Level LoadLevelFromFile(string filepath) {
@@ -2444,6 +2451,121 @@ void LoadShader(const char* filename, GLuint shader_id) {
     delete [] log;
 }
 
+// Carrega um arquivo de som
+void LoadSoundFromFile(const char* path, sf::SoundBuffer * buffer) {
+    printf("Carregando som \"%s\"... ", path);
+    if (!buffer->loadFromFile(path)) {
+        printf("Falha ao carregar som!\n");
+        std::exit(EXIT_FAILURE);
+    }
+    else printf(" OK!\n");
+}
+
+// Carrega um arquivo de música
+void LoadMusicFromFile(const char* path, sf::Music * buffer) {
+    printf("Carregando música \"%s\"... ", path);
+    if (!buffer->openFromFile(path)) {
+        printf("Falha ao carregar música!\n");
+        std::exit(EXIT_FAILURE);
+    }
+    else {
+        printf(" OK!\n");
+        buffer->setLoop(true);
+    }
+}
+
+///////////
+// AUDIO //
+///////////
+
+// Toca a música de um nível
+void PlayLevelMusic(int level_number) {
+    if (!g_MusicOn)
+        return;
+
+    if(menumusic.getStatus() == 2)
+        menumusic.stop();
+    switch(level_number){
+        case 1:
+        case 2:{
+            if(techmusic.getStatus() != 2)
+                techmusic.play();
+            break;
+        }
+        case 3:
+        case 5:{
+            if(naturemusic.getStatus() != 2)
+                naturemusic.play();
+            break;
+        }
+        case 4:
+        case 9:{
+            if(watermusic.getStatus() != 2)
+                watermusic.play();
+            break;
+        }
+        case 6:
+        case 8:{
+            if(spookymusic.getStatus() != 2)
+                spookymusic.play();
+            break;
+        }
+        case 7:
+        case 10:{
+            if(spacemusic.getStatus() != 2)
+                spacemusic.play();
+            break;
+        }
+    }
+}
+
+// Toca a música do menu
+void PlayMenuMusic() {
+    if (!g_MusicOn)
+        return;
+
+    if (techmusic.getStatus() == 2)
+        techmusic.stop();
+    if (naturemusic.getStatus() == 2)
+        naturemusic.stop();
+    if (watermusic.getStatus() == 2)
+        watermusic.stop();
+    if (spacemusic.getStatus() == 2)
+        spacemusic.stop();
+    if (spookymusic.getStatus() == 2)
+        spookymusic.stop();
+    menumusic.play();
+}
+
+// Para todas as músicas
+void StopAllMusic() {
+    if (techmusic.getStatus() == 2)
+        techmusic.stop();
+    if (naturemusic.getStatus() == 2)
+        naturemusic.stop();
+    if (watermusic.getStatus() == 2)
+        watermusic.stop();
+    if (spacemusic.getStatus() == 2)
+        spacemusic.stop();
+    if (spookymusic.getStatus() == 2)
+        spookymusic.stop();
+    if (menumusic.getStatus() == 2)
+        menumusic.stop(); 
+}
+
+// Toca um som
+void PlaySound(sf::SoundBuffer * buffer) {
+    if (!g_SoundsOn)
+        return;
+
+    sound.setBuffer(*buffer);
+    sound.play();
+}
+
+//////////////////
+// CONTROLE GPU //
+//////////////////
+
 // Esta função cria um programa de GPU, o qual contém obrigatoriamente um
 // Vertex Shader e um Fragment Shader.
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
@@ -2561,8 +2683,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // cursor como sendo a última posição conhecida do cursor.
     g_LastCursorPosX = xpos;
     g_LastCursorPosY = ypos;
-
-
 }
 
 // Definição da função que será chamada sempre que o usuário pressionar alguma
@@ -2578,7 +2698,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_ShowInfoText = !g_ShowInfoText;
     }
 
-    if (key == GLFW_KEY_C && action == GLFW_PRESS && g_CurrentScreen == 2)
+    if (key == GLFW_KEY_C && action == GLFW_PRESS && g_CurrentScreen == SCREEN_GAME)
         g_useFirstPersonCamera = !(g_useFirstPersonCamera);
 
     // Verifica se as teclas de movimentação foram pressionadas/soltas
@@ -2666,42 +2786,9 @@ void PrintGPUInfoInTerminal() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-// Esta função recebe um vértice com coordenadas de modelo p_model e passa o
-// mesmo por todos os sistemas de coordenadas armazenados nas matrizes model,
-// view, e projection; e escreve na tela as matrizes e pontos resultantes
-// dessas transformações.
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, vec4 p_model) {
-    if ( !g_ShowInfoText )
-        return;
-
-    vec4 p_world = model*p_model;
-    vec4 p_camera = view*p_world;
-
-    float pad = TextRendering_LineHeight(window);
-
-    TextRendering_PrintString(window, " Model matrix             Model     World", -1.0f, 1.0f-pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f-2*pad, 1.0f);
-
-    TextRendering_PrintString(window, " View matrix              World     Camera", -1.0f, 1.0f-7*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f-8*pad, 1.0f);
-
-    TextRendering_PrintString(window, " Projection matrix        Camera                   NDC", -1.0f, 1.0f-13*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f-14*pad, 1.0f);
-}
-
-// Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow* window) {
-    if ( !g_ShowInfoText )
-        return;
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    if ( g_UsePerspectiveProjection )
-        TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
-    else
-        TextRendering_PrintString(window, "Orthographic", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
-}
+///////////////////////////
+// RENDERIZAÇÃO DE TEXTO //
+///////////////////////////
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
 // second).
