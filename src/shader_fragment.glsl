@@ -35,6 +35,10 @@ uniform mat4 projection;
 #define JET         22
 #define BEACHBALL   23
 #define VOLLEYBALL  24
+#define GRASS       25
+#define WOOD        26
+#define SNOW        27
+#define DARKFLOOR   28
 
 #define KEY_RED     30
 #define KEY_GREEN   31
@@ -50,6 +54,13 @@ uniform mat4 projection;
 
 #define PARTICLE    80
 
+#define SKYBOX_TOP      100
+#define SKYBOX_BOTTOM   101
+#define SKYBOX_EAST     102
+#define SKYBOX_WEST     103
+#define SKYBOX_SOUTH    104
+#define SKYBOX_NORTH    105
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -60,8 +71,6 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
-uniform sampler2D TextureImage3;
-uniform sampler2D TextureImage4;
 
 #define WALLGROUNDGRASS_W 841
 #define WALLGROUNDGRASS_H 305
@@ -71,6 +80,8 @@ uniform sampler2D TextureImage4;
 uniform int anim_timer;
 
 uniform int yellow_particle_color;
+
+uniform int skytheme;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -156,16 +167,27 @@ void main()
     }
     else if ( object_id == WATER )
     {
-        U = texcoords.x;
-        V = texcoords.y;
+        int xpos = 0;
+        int ypos = 0;
 
         switch (anim_timer) {
-        case 0: { Kd = texture(TextureImage1, vec2(U,V)).rgba; break; }
-        case 1: { Kd = texture(TextureImage2, vec2(U,V)).rgba; break; }
-        case 2: { Kd = texture(TextureImage3, vec2(U,V)).rgba; break; }
-        case 3: { Kd = texture(TextureImage4, vec2(U,V)).rgba; break; }
+        case 0: case 1: case 2: case 3: {ypos = 3; break; }
+        case 4: case 5: case 6: case 7: {ypos = 2; break; }
+        case 8: case 9: case 10: case 11: {ypos = 1; break; }
+        case 12: case 13: case 14: case 15: {ypos = 0; break; }
         }
 
+        switch (anim_timer) {
+        case 0: case 4: case 8: case 12: {xpos = 0; break; }
+        case 1: case 5: case 9: case 13: {xpos = 1; break; }
+        case 2: case 6: case 10: case 14: {xpos = 2; break; }
+        case 3: case 7: case 11: case 15: {xpos = 3; break; }
+        }
+
+        U = (texcoords.x + xpos)/4;
+        V = (texcoords.y + ypos)/4;
+
+        Kd = texture(TextureImage1, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == WALL )
@@ -180,6 +202,22 @@ void main()
     {
         U = (texcoords.x + 3)/ 4;
         V = (texcoords.y + 3)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == GRASS ) 
+    {
+        U = (texcoords.x + 2)/ 4;
+        V = (texcoords.y + 3)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == WOOD )
+    {
+        U = (texcoords.x + 2)/ 4;
+        V = (texcoords.y + 0)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
@@ -418,6 +456,49 @@ void main()
     }
     else if ( object_id == PLAYER_LEG ) {
         color = vec4(0.4f, 0.3f, 0.1f, 1.0f);
+    }
+    else if ( object_id == SKYBOX_TOP ) {
+        U = (texcoords.x + 1)/ 3;
+        V = (texcoords.y + 1)/ 2;
+
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
+    } else if ( object_id == SKYBOX_BOTTOM ) {
+        U = (texcoords.x + 0)/ 3;
+        V = (texcoords.y + 1)/ 2;
+
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
+    } else if ( object_id == SKYBOX_WEST ) {
+        U = (texcoords.x + 2)/ 3;
+        V = (texcoords.y + 1)/ 2;
+
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
+    } else if ( object_id == SKYBOX_EAST ) {
+        U = (texcoords.x + 1)/ 3;
+        V = (texcoords.y + 0)/ 2;
+    
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
+    } else if ( object_id == SKYBOX_SOUTH ) {
+        U = (texcoords.x + 2)/ 3;
+        V = (texcoords.y + 0)/ 2;
+    
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
+    } else if ( object_id == SKYBOX_NORTH ) {
+        U = (texcoords.x + 0)/ 3;
+        V = (texcoords.y + 0)/ 2;
+
+        if (skytheme == 1)
+            Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        color = Kd;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.

@@ -101,7 +101,7 @@ struct MapObject {
 struct Level {
 	int cow_no;
     int time;
-    int skybox;
+    int theme;
     int height;
     int width;
     std::vector<std::vector<string>> plant;
@@ -139,12 +139,14 @@ int RenderMainMenu(GLFWwindow* window);
 int RenderLevelSelection(GLFWwindow* window);
 vec4 AdjustFPSCamera(vec4 position);
 int RenderLevel(int level_number, GLFWwindow* window);
-void ShowInventory(GLFWwindow* window);
+int ShowDeathMessage(GLFWwindow* window, const char* message);
+void ShowInventory(GLFWwindow* window, int level_time);
 
 // Controle de um nível
 void ClearInventory();
 void RegisterLevelObjects(Level level);
-void RegisterObjectInMapVector(string tile_type, float x, float z);
+void RegisterFloor(float x, float z, int theme);
+void RegisterObjectInMapVector(string tile_type, float x, float z, int theme);
 void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant);
 
@@ -152,6 +154,7 @@ vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant);
 void DrawMapObjects();
 void DrawPlayer(vec4 position, float angle_y, float angle_x, float scale);
 void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model);
+void DrawSkyboxPlanes();
 
 // Colisões
 vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size);
@@ -168,7 +171,7 @@ bool CollidedWithEnemy(vecInt vector_objects);
 void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow);
 
 // Movimentação
-void MovePlayer();
+void MovePlayer(int theme);
 void MoveBlock(int block_index);
 void MoveEnemies();
 void MoveJet(int jet_index);
@@ -247,6 +250,10 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
 #define JET         22
 #define BEACHBALL   23
 #define VOLLEYBALL  24
+#define GRASS       25
+#define WOOD        26
+#define SNOW        27
+#define DARKFLOOR   28
 
 #define KEY_RED 	30
 #define KEY_GREEN 	31
@@ -266,6 +273,13 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
 #define ENEMY_SPEED 0.05f
 #define ROTATION_SPEED_X 0.01f
 #define ROTATION_SPEED_Y 0.004f
+
+#define SKYBOX_TOP      100
+#define SKYBOX_BOTTOM   101
+#define SKYBOX_EAST     102
+#define SKYBOX_WEST     103
+#define SKYBOX_SOUTH    104
+#define SKYBOX_NORTH    105
 
 #define ANIMATION_SPEED 10
 #define ITEM_ROTATION_SPEED 0.1
@@ -319,6 +333,7 @@ float g_ItemAngleY = 0.0f;
 
 // Variável de controle de encerramento de nível
 bool g_MapEnded = false;
+bool g_ShowingMessage = false;
 
 // Variáveis de controle das teclas
 bool key_w_pressed = false;
@@ -369,6 +384,7 @@ sf::SoundBuffer splashsound;
 sf::SoundBuffer ball1sound;
 sf::SoundBuffer deathsound;
 sf::SoundBuffer winsound;
+sf::SoundBuffer bellsound;
 sf::Sound       sound;
 
 // Música
@@ -391,6 +407,7 @@ GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 GLint anim_timer_uniform;
 GLint yellow_particle_color_uniform;
+GLint skytheme_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -433,10 +450,8 @@ int main(int argc, char* argv[])
 
     // Carregamento de imagens
     LoadTextureImage("../../data/textures/textures.png");   		// TextureImage0
-    LoadTextureImage("../../data/textures/animated/water1.png");    // TextureImage1
-    LoadTextureImage("../../data/textures/animated/water5.png");    // TextureImage2
-    LoadTextureImage("../../data/textures/animated/water9.png");    // TextureImage3
-    LoadTextureImage("../../data/textures/animated/water13.png");   // TextureImage4
+    LoadTextureImage("../../data/textures/water.png");              // TextureImage1
+    LoadTextureImage("../../data/textures/abra.png");               // TextureImage2
 
     // Carregamento de models
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -477,12 +492,13 @@ int main(int argc, char* argv[])
     LoadSoundFromFile("../../data/sound/ball1.wav", &ball1sound);
     LoadSoundFromFile("../../data/sound/death.wav", &deathsound);
     LoadSoundFromFile("../../data/sound/win.wav", &winsound);
+    LoadSoundFromFile("../../data/sound/bell.wav", &bellsound);
 
     // Carregamento de música
     LoadMusicFromFile("../../data/music/velapax.ogg", &menumusic);
     LoadMusicFromFile("../../data/music/landingbase.ogg", &techmusic);
     LoadMusicFromFile("../../data/music/highway.ogg", &watermusic);
-    LoadMusicFromFile("../../data/music/strshine.ogg", &naturemusic);
+    LoadMusicFromFile("../../data/music/rock1.ogg", &naturemusic);
     LoadMusicFromFile("../../data/music/losses.ogg", &spookymusic);
     LoadMusicFromFile("../../data/music/lax_here.ogg", &spacemusic);
 
@@ -825,13 +841,20 @@ int RenderLevel(int level_number, GLFWwindow* window) {
     g_CameraDistance = 2.5f;
     camera_position_c  = player_position;
     camera_xz_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f);
+    g_ShowingMessage = false;
 
     // Variável de controle da animação de morte
     int death_timer = 1000;
+    
+    // Variável de controle do tempo do nível
+    int map_timer = 30;
 
     // Variável de controle de animação dos tiles
     int curr_anim_tile = 0;
     int anim_timer = 0;
+
+    // Variáveis de controle da mensagem de morte
+    string message = "";
 
     // Carrega nível um
     string levelpath = "../../data/levels/" + std::to_string(level_number);
@@ -853,7 +876,8 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         if(esc_pressed)
         	return SCREEN_MAINMENU;
         if(g_MapEnded) {
-        	return SCREEN_NEXTLEVEL;
+            g_ShowingMessage = true;
+            message = "Congratulations! You finished this level :)";
         }
 
         // Controle do tipo de câmera
@@ -880,7 +904,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         glm::mat4 projection;
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -20.0f; // Posição do "far plane"
+        float farplane  = -500.0f; // Posição do "far plane"
 
         // Projeção perspectiva
         float field_of_view = 3.141592 / 3.0f;
@@ -892,21 +916,31 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         // JOGADOR //
         /////////////
 
-        // Movimentação do personagem e animações de morte
-        if (g_DeathByWater || g_DeathByEnemy) {
+        // Movimentação do personagem, mensagens e animações de morte
+        if (g_ShowingMessage) {
+            //TextRendering_PrintString(window, message.c_str(), -0.7f, 0.3f, 2.5f);
+            if (key_space_pressed && !g_MapEnded)
+                return SCREEN_GAME;
+            else if (key_space_pressed)
+                return SCREEN_NEXTLEVEL;
+        } else if (g_DeathByWater || g_DeathByEnemy) {
             death_timer -= 10;
             if (death_timer <= 0) {
-                g_DeathByEnemy = false;
-                g_DeathByWater = false;
-                death_timer = 1000;
-                return SCREEN_GAME;
+                if (g_DeathByEnemy) {
+                    g_ShowingMessage = true;
+                    message = "Watch out for the creatures!";
+                }
+                else if (g_DeathByWater) {
+                    g_ShowingMessage = true;
+                    message = "You can't swim!";
+                }
             }
             if (g_DeathByWater)
                 player_position[1] -= 0.01f;
             else if (g_DeathByEnemy && death_timer >= 990)
                 PlaySound(&deathsound);
         }           
-        else MovePlayer();
+        else MovePlayer(level.theme);
 
         // Ajusta vetores de direção
         straight_vector = straight_vector_sign * camera_xz_direction;
@@ -930,7 +964,17 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         ///////////////////
 
         DrawMapObjects(); // Desenha
-        MoveEnemies();    // Movimenta inimigos
+        if (!g_ShowingMessage)
+            MoveEnemies();    // Movimenta inimigos
+
+        ////////////
+        // SKYBOX //
+        ////////////
+
+        if (level.theme > 0) {
+            DrawSkyboxPlanes();
+            glUniform1i(skytheme_uniform, level.theme);
+        }
 
         ///////////////
         // ANIMAÇÕES //
@@ -941,7 +985,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         // copiar este trecho para cada switch na função de renderização.
         anim_timer = (anim_timer + 1) % ANIMATION_SPEED;
         if (anim_timer == 0) 
-        	curr_anim_tile = (curr_anim_tile+1) % 4;
+        	curr_anim_tile = (curr_anim_tile+1) % 16;
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
 		// Rotação dos itens
@@ -952,8 +996,20 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 		// Fogo: partículas
 		AnimateParticles();
 
+        // Tempo do nível
+        map_timer--;
+        if (map_timer <= 0) {
+            map_timer = 40;
+            level.time--;
+            if (level.time == 0) {
+                PlaySound(&bellsound);
+                g_ShowingMessage = true;
+                message = "Watch the time!";
+            }
+        }
+
         // Mostra inventário na tela
-        ShowInventory(window); 
+        ShowInventory(window, level.time); 
 
         // FPS
         if (g_ShowInfoText) 
@@ -967,7 +1023,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 }
 
 // Mostra o inventário do jogador na tela
-void ShowInventory(GLFWwindow* window) {
+void ShowInventory(GLFWwindow* window, int level_time) {
 	float pad = TextRendering_LineHeight(window);
 
 	string invstring = "REQUIRED COWS: " + std::to_string(g_LevelCowAmount - player_inventory.cows) + " KEYS: ";
@@ -977,9 +1033,9 @@ void ShowInventory(GLFWwindow* window) {
 	else invstring += "  ";
 	if (player_inventory.keys.blue) invstring += "B ";
 	else invstring += "  ";
-	if (player_inventory.keys.yellow) invstring += "Y";
+	if (player_inventory.keys.yellow) invstring += "Y ";
 	else invstring += "  ";
-    invstring += "TIME: ";
+    invstring += "TIME: " + std::to_string(level_time);
 
     TextRendering_PrintString(window, invstring, -1.0f+pad/5, 1.0f-pad, 1.0f);
 }
@@ -1004,14 +1060,37 @@ void RegisterLevelObjects(Level level) {
             float x = -(center_x - col);
             float z = -(center_z - line);
 
-            RegisterObjectInMapVector(current_tile, x, z);
+            RegisterObjectInMapVector(current_tile, x, z, level.theme);
         }
     }
 }
 
+// Registra um piso com base no tema do nível
+void RegisterFloor(float x, float z, int theme) {
+    vec3 tile_size = vec3(1.0f, 0.0f, 1.0f);
+    vec3 planemodel_size = vec3(1.0f, 1.0f, 1.0f);
+    float floor_shift = -1.0f;
+
+    switch(theme) {
+        case 0:
+        case 2:
+            RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+            break;
+        case 1:
+            RegisterObjectInMap(GRASS, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+            break;
+        case 3:
+            RegisterObjectInMap(DARKFLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+            break;
+        case 4:
+            RegisterObjectInMap(SNOW, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+            break;
+    }    
+}
+
 // Função que registra um objeto em dada posição do mapa
 // CASO SE QUEIRA ADICIONAR NOVOS OBJETOS, DEVE-SE FAZÊ-LO AQUI
-void RegisterObjectInMapVector(string tile_type, float x, float z) {
+void RegisterObjectInMapVector(string tile_type, float x, float z, int theme) {
     /* Propriedades de objetos (deslocamento, tamanho, etc) */
 
     // Cubo (genérico)
@@ -1058,6 +1137,11 @@ void RegisterObjectInMapVector(string tile_type, float x, float z) {
         break;
     }
 
+    case string2int("WO"): {
+        RegisterObjectInMap(WOOD, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        break;
+    }
+
     // Água
     case string2int("WA"):{
         RegisterObjectInMap(WATER, vec4(x, floor_shift, z, 1.0f), cube_size, "plane", planemodel_size);
@@ -1067,7 +1151,7 @@ void RegisterObjectInMapVector(string tile_type, float x, float z) {
     // Fogo:
     case string2int("FI"):{
         RegisterObjectInMap(FIRE, vec4(x, floor_shift, z, 1.0f), cube_size, "fire", cube_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
@@ -1080,138 +1164,139 @@ void RegisterObjectInMapVector(string tile_type, float x, float z) {
     // Bloco de terra
     case string2int("BD"):{
         RegisterObjectInMap(DIRTBLOCK, vec4(x, dirtblock_vertical_shift, z, 1.0f), dirtblock_size, "cube", dirtblock_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Chave vermelha
     case string2int("kr"):{
     	RegisterObjectInMap(KEY_RED, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+    	RegisterFloor(x, z, theme);
     	break;
     }
 
     // Chave verde
     case string2int("kg"):{
     	RegisterObjectInMap(KEY_GREEN, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+    	RegisterFloor(x, z, theme);
     	break;
     }
 
 	// Chave azul
     case string2int("kb"):{
     	RegisterObjectInMap(KEY_BLUE, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+    	RegisterFloor(x, z, theme);
     	break;
     }
 
 	// Chave amarela
     case string2int("ky"):{
     	RegisterObjectInMap(KEY_YELLOW, vec4(x, key_vertical_shift, z, 1.0f), key_size, "key", keymodel_size);
-    	RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+    	RegisterFloor(x, z, theme);
     	break;
     }
 
     // Porta vermelha:
     case string2int("DR"):{
         RegisterObjectInMap(DOOR_RED, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Porta verde:
     case string2int("DG"):{
         RegisterObjectInMap(DOOR_GREEN, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Porta azul:
     case string2int("DB"):{
         RegisterObjectInMap(DOOR_BLUE, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Porta amarela:
     case string2int("DY"):{
         RegisterObjectInMap(DOOR_YELLOW, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Vaquinha bebê:
     case string2int("co"):{
         RegisterObjectInMap(BABYCOW, vec4(x, babycow_vertical_shift, z, 1.0f), babycow_size, "cow", babycow_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Vaca mãe:
     case string2int("CW"):{
         RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow", cow_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("J0"):{
         RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("J1"):{
         RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 1);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("J2"):{
         RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 2);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("J3"):{
         RegisterObjectInMap(JET, vec4(x, jet_vertical_shift, z, 1.0f), jet_size, "jet", jetmodel_size, 3);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("B0"):{
         RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("B1"):{
         RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 1);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("B2"):{
         RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 2);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("B3"):{
         RegisterObjectInMap(BEACHBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size, 3);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     case string2int("V0"):{
         RegisterObjectInMap(VOLLEYBALL, vec4(x, sphere_vertical_shift, z, 1.0f), ball_size, "sphere", sphere_size);
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+        RegisterFloor(x, z, theme);
         break;
     }
 
     // Jogador e piso
     case string2int("PS"):
-    case string2int("FF"):{
-        RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+    case string2int("FF"):
+    case string2int("GR"):{
+        RegisterFloor(x, z, theme);
         break;
     }
 
@@ -1413,6 +1498,43 @@ void DrawVirtualObject(const char* object_name, int object_id, glm::mat4 model) 
     glBindVertexArray(0);
 }
 
+// Desenha a skybox
+void DrawSkyboxPlanes() {
+    float skybox_distance = 100.0f;
+
+    glm::mat4 model = Matrix_Translate(skybox_distance, 0.0f, 0.0f)
+                    * Matrix_Scale(1.0f, skybox_distance*2, skybox_distance*2)
+                    * Matrix_Rotate_Z(PI/2)
+                    * Matrix_Rotate_Y(-PI/2);
+    DrawVirtualObject("plane", SKYBOX_WEST, model);
+
+    model = Matrix_Translate(-skybox_distance, 0.0f, 0.0f)
+                    * Matrix_Scale(1.0f, skybox_distance*2, skybox_distance*2)
+                    * Matrix_Rotate_Z(-PI/2)
+                    * Matrix_Rotate_Y(PI/2);
+    DrawVirtualObject("plane", SKYBOX_EAST, model);
+
+    model = Matrix_Translate(0.0f, skybox_distance, 0.0f)
+                    * Matrix_Scale(skybox_distance*2, 1.0f, skybox_distance*2)
+                    * Matrix_Rotate_X(PI);
+    DrawVirtualObject("plane", SKYBOX_TOP, model);
+
+    model = Matrix_Translate(0.0f, -skybox_distance, 0.0f)
+                    * Matrix_Scale(skybox_distance*2, 1.0f, skybox_distance*2);
+    DrawVirtualObject("plane", SKYBOX_BOTTOM, model);
+
+    model = Matrix_Translate(0.0f, 0.0f, skybox_distance)
+                    * Matrix_Scale(skybox_distance*2, skybox_distance*2, 1.0f)
+                    * Matrix_Rotate_X(-PI/2)
+                    * Matrix_Rotate_Y(PI);
+    DrawVirtualObject("plane", SKYBOX_NORTH, model);
+
+    model = Matrix_Translate(0.0f, 0.0f, -skybox_distance)
+                    * Matrix_Scale(skybox_distance*2, skybox_distance*2, 1.0f)
+                    * Matrix_Rotate_X(PI/2);
+    DrawVirtualObject("plane", SKYBOX_SOUTH, model);
+}
+
 //////////////
 // COLISÕES //
 //////////////
@@ -1428,6 +1550,7 @@ vec4 GetObjectTopBoundary(vec4 object_position, vec3 object_size) {
 float GetTileToleranceValue(int object_type) {
 	switch(object_type) {
     	case WALL:
+        case WOOD:
     	case DIRTBLOCK:
     	case DOOR_RED:
     	case DOOR_GREEN:
@@ -1553,7 +1676,7 @@ bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
 		// Adicione novos objetos bloqueantes aqui
         if ((is_volleyball && colliding_obj_type == FLOOR) || 
             isIn(colliding_obj_type, {WALL, DIRTBLOCK, DIRT, DOOR_RED, DOOR_GREEN, DOOR_YELLOW, DOOR_BLUE,
-                                        COW, JET, BEACHBALL, VOLLEYBALL}))
+                                        COW, JET, BEACHBALL, VOLLEYBALL, WOOD}))
 			return true;
 
         // Caso seja uma bola de volei (quicando), deve-se levar em conta o chão também.
@@ -1577,7 +1700,7 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
     // Primeiro verificamos se existem paredes
     while (curr_index < vector_objects.size()) {
         int curr_obj_index = vector_objects[curr_index];
-        if (map_objects[curr_obj_index].object_type == WALL)
+        if (isIn(map_objects[curr_obj_index].object_type, {WALL, WOOD}))
             return true;
         curr_index++;
     }
@@ -1700,7 +1823,7 @@ void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
 /////////////////////////////
 
 // Função que calcula a posição nova do jogador (ao se movimentar)
-void MovePlayer() {
+void MovePlayer(int theme) {
 
 	/*
 	   ALERTA DE GAMBIARRA: as funções de verificação das teclas WASD
@@ -1773,7 +1896,16 @@ void MovePlayer() {
 		    else if (GetVectorObjectType(collided_objects, WATER) >= 0) {
 		        g_DeathByWater = true;
 		    } else if (collided_dirt_index >= 0) {
-		        map_objects[collided_dirt_index].object_type = FLOOR;
+                switch(theme){
+                    case 0:
+                        map_objects[collided_dirt_index].object_type = FLOOR;
+                        break;
+                    case 1:
+                        map_objects[collided_dirt_index].object_type = GRASS;
+                        break;
+                    default:
+                        map_objects[collided_dirt_index].object_type = FLOOR;
+                }
 		    } else if (collided_redkey_index >= 0) {
 		        sound.setBuffer(keysound);
                 sound.play();
@@ -2266,15 +2398,15 @@ Level LoadLevelFromFile(string filepath) {
     else {
         try {
             // Salva largura e altura na estrutura do nível.
-            string width, height, cow_no, time, skybox;
+            string width, height, cow_no, time, theme;
             getline(level_file, cow_no);
             getline(level_file, time);
-            getline(level_file, skybox);
+            getline(level_file, theme);
             getline(level_file, width);
             getline(level_file, height);
             loaded_level.cow_no = atoi(cow_no.c_str());
             loaded_level.time = atoi(time.c_str());
-            loaded_level.skybox = atoi(skybox.c_str());
+            loaded_level.theme = atoi(theme.c_str());
             loaded_level.width = atoi(width.c_str());
             loaded_level.height = atoi(height.c_str());
 
@@ -2391,6 +2523,7 @@ void LoadShadersFromFiles() {
     bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
     bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
     anim_timer_uniform      = glGetUniformLocation(program_id, "anim_timer");
+    skytheme_uniform        = glGetUniformLocation(program_id, "skytheme");
     yellow_particle_color_uniform = glGetUniformLocation(program_id, "yellow_particle_color");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
@@ -2691,7 +2824,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-	if (g_CurrentScreen == SCREEN_MAINMENU || g_CurrentScreen == SCREEN_LEVELSELECT)
+	if (g_CurrentScreen == SCREEN_MAINMENU || g_CurrentScreen == SCREEN_LEVELSELECT || g_ShowingMessage)
 		return;
 
     // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
