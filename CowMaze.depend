@@ -503,7 +503,7 @@
 	<stddef.h>
 	<stdint.h>
 
-1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\glad.c
+1512154869 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\glad.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -511,7 +511,7 @@
 	<windows.h>
 	<dlfcn.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glad\glad.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glad\glad.h
 	<windows.h>
 	<stddef.h>
 	<KHR/khrplatform.h>
@@ -522,13 +522,13 @@
 	<stdint.h>
 	<inttypes.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\khr\khrplatform.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\khr\khrplatform.h
 	<sys/cdefs.h>
 	<stdint.h>
 	<inttypes.h>
 	<stdint.h>
 
-1511915297 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
+1513474237 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -542,6 +542,8 @@
 	<sstream>
 	<stdexcept>
 	<algorithm>
+	<windows.h>
+	<SFML/Audio.hpp>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
 	<glm/mat4x4.hpp>
@@ -552,7 +554,7 @@
 	"utils.h"
 	"matrices.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glfw\glfw3.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glfw\glfw3.h
 	<stddef.h>
 	<stdint.h>
 	<OpenGL/gl3.h>
@@ -573,10 +575,10 @@
 	<GL/glext.h>
 	<GL/glu.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x4.hpp
 	"detail/type_mat4x4.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.hpp
 	"../fwd.hpp"
 	"type_vec4.hpp"
 	"type_mat.hpp"
@@ -584,23 +586,23 @@
 	<cstddef>
 	"type_mat4x4.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\fwd.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\fwd.hpp
 	"detail/type_int.hpp"
 	"detail/type_float.hpp"
 	"detail/type_vec.hpp"
 	"detail/type_mat.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_int.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_int.hpp
 	"setup.hpp"
 	<type_traits>
 	<cstdint>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\setup.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\setup.hpp
 	<cassert>
 	<cstddef>
 	"../simd/platform.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\platform.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\platform.h
 	<cuda.h>
 	<intrin.h>
 	<immintrin.h>
@@ -612,40 +614,40 @@
 	<pmmintrin.h>
 	<emmintrin.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_float.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_float.hpp
 	"setup.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec.hpp
 	"precision.hpp"
 	"type_int.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\precision.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\precision.hpp
 	"setup.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat.hpp
 	"precision.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec4.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle.hpp
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle_func.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_swizzle_func.hpp
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4.inl
 	"type_vec4_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec4_simd.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4.inl
 	"func_matrix.hpp"
 	"type_mat4x4_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.hpp
 	"../detail/precision.hpp"
 	"../detail/setup.hpp"
 	"../detail/type_mat.hpp"
@@ -663,37 +665,37 @@
 	"../mat4x4.hpp"
 	"func_matrix.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec2.hpp
 	"detail/type_vec2.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec2.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec2.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec3.hpp
 	"detail/type_vec3.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.hpp
 	"type_vec.hpp"
 	"_swizzle.hpp"
 	"_swizzle_func.hpp"
 	<cstddef>
 	"type_vec3.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec3.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\vec4.hpp
 	"detail/type_vec4.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x2.hpp
 	"detail/type_mat2x2.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_mat.hpp"
@@ -701,13 +703,13 @@
 	<cstddef>
 	"type_mat2x2.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x2.inl
 	"func_matrix.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x3.hpp
 	"detail/type_mat2x3.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -716,12 +718,12 @@
 	<cstddef>
 	"type_mat2x3.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x3.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat2x4.hpp
 	"detail/type_mat2x4.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec4.hpp"
@@ -730,12 +732,12 @@
 	<cstddef>
 	"type_mat2x4.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat2x4.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x2.hpp
 	"detail/type_mat3x2.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -744,12 +746,12 @@
 	<cstddef>
 	"type_mat3x2.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x2.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x3.hpp
 	"detail/type_mat3x3.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_mat.hpp"
@@ -757,13 +759,13 @@
 	<cstddef>
 	"type_mat3x3.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x3.inl
 	"func_matrix.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat3x4.hpp
 	"detail/type_mat3x4.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
@@ -772,12 +774,12 @@
 	<cstddef>
 	"type_mat3x4.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat3x4.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x2.hpp
 	"detail/type_mat4x2.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.hpp
 	"../fwd.hpp"
 	"type_vec2.hpp"
 	"type_vec4.hpp"
@@ -786,12 +788,12 @@
 	<cstddef>
 	"type_mat4x2.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x2.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\mat4x3.hpp
 	"detail/type_mat4x3.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.hpp
 	"../fwd.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
@@ -800,21 +802,21 @@
 	<cstddef>
 	"type_mat4x3.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x3.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix.inl
 	"../geometric.hpp"
 	<limits>
 	"func_matrix_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\geometric.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\geometric.hpp
 	"detail/func_geometric.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.hpp
 	"type_vec3.hpp"
 	"func_geometric.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric.inl
 	"func_exponential.hpp"
 	"func_common.hpp"
 	"type_vec2.hpp"
@@ -822,7 +824,7 @@
 	"type_float.hpp"
 	"func_geometric_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.hpp
 	"type_vec1.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -830,7 +832,7 @@
 	<cmath>
 	"func_exponential.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.hpp
 	"../fwd.hpp"
 	"type_vec.hpp"
 	"_swizzle.hpp"
@@ -838,9 +840,9 @@
 	<cstddef>
 	"type_vec1.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_vec1.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential.inl
 	"func_vector_relational.hpp"
 	"_vectorize.hpp"
 	<limits>
@@ -848,40 +850,40 @@
 	<cassert>
 	"func_exponential_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.hpp
 	"precision.hpp"
 	"setup.hpp"
 	"func_vector_relational.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational.inl
 	<limits>
 	"func_vector_relational_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_vector_relational_simd.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_vectorize.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_vectorize.hpp
 	"type_vec1.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
 	"type_vec4.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_exponential_simd.inl
 	"../simd/exponential.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\exponential.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\exponential.h
 	"platform.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.hpp
 	"setup.hpp"
 	"precision.hpp"
 	"type_int.hpp"
 	"_fixes.hpp"
 	"func_common.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_fixes.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\_fixes.hpp
 	<cmath>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common.inl
 	"func_vector_relational.hpp"
 	"type_vec2.hpp"
 	"type_vec3.hpp"
@@ -890,30 +892,30 @@
 	<limits>
 	"func_common_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_common_simd.inl
 	"../simd/common.h"
 	<immintrin.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\common.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\common.h
 	"platform.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_geometric_simd.inl
 	"../simd/geometric.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\geometric.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\geometric.h
 	"common.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_matrix_simd.inl
 	"type_mat4x4.hpp"
 	"func_geometric.hpp"
 	"../simd/matrix.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\matrix.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\simd\matrix.h
 	"geometric.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\type_mat4x4_simd.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.hpp
 	"../gtc/quaternion.hpp"
 	"../vec2.hpp"
 	"../vec3.hpp"
@@ -930,7 +932,7 @@
 	<cstring>
 	"type_ptr.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.hpp
 	"../mat3x3.hpp"
 	"../mat4x4.hpp"
 	"../vec3.hpp"
@@ -938,29 +940,29 @@
 	"../gtc/constants.hpp"
 	"quaternion.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.hpp
 	"../detail/setup.hpp"
 	"constants.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\constants.inl
 	<limits>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion.inl
 	"../trigonometric.hpp"
 	"../geometric.hpp"
 	"../exponential.hpp"
 	<limits>
 	"quaternion_simd.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\trigonometric.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\trigonometric.hpp
 	"detail/func_trigonometric.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.hpp
 	"setup.hpp"
 	"precision.hpp"
 	"func_trigonometric.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric.inl
 	"_vectorize.hpp"
 	<cmath>
 	<limits>
@@ -968,25 +970,25 @@
 
 1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\detail\func_trigonometric_simd.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\exponential.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\exponential.hpp
 	"detail/func_exponential.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion_simd.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\quaternion_simd.inl
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\type_ptr.inl
 	<cstring>
 
 1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\utils.h
 	<cstdio>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\matrices.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\matrices.h
 	<cstdio>
 	<cstdlib>
 	<glm/mat4x4.hpp>
 	<glm/vec4.hpp>
 	<glm/gtc/matrix_transform.hpp>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.hpp
 	"../mat4x4.hpp"
 	"../vec2.hpp"
 	"../vec3.hpp"
@@ -994,15 +996,15 @@
 	"../gtc/constants.hpp"
 	"matrix_transform.inl"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.inl
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\gtc\matrix_transform.inl
 	"../geometric.hpp"
 	"../trigonometric.hpp"
 	"../matrix.hpp"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\matrix.hpp
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\glm\matrix.hpp
 	"detail/func_matrix.hpp"
 
-1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\textrendering.cpp
+1512154869 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\textrendering.cpp
 	<string>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
@@ -1011,11 +1013,11 @@
 	"utils.h"
 	"dejavufont.h"
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\dejavufont.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\dejavufont.h
 	<stddef.h>
 	<stdint.h>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\tiny_obj_loader.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\tiny_obj_loader.h
 	<map>
 	<string>
 	<vector>
@@ -1029,7 +1031,7 @@
 	<fstream>
 	<sstream>
 
-1511572168 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\stb_image.h
+1512154869 d:\documents\ufrgs\5th part ii\fcg\trabalho final\include\stb_image.h
 	"stb_image.h"
 	<stdio.h>
 	<stdarg.h>
@@ -1045,10 +1047,10 @@
 	<intrin.h>
 	<arm_neon.h>
 
-1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\stb_image.cpp
+1512154869 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\stb_image.cpp
 	"stb_image.h"
 
-1511572168 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\tiny_obj_loader.cpp
+1512154869 source:d:\documents\ufrgs\5th part ii\fcg\trabalho final\src\tiny_obj_loader.cpp
 	"tiny_obj_loader.h"
 
 1511915438 source:/home/leich/fcg-the-homogeneous-cow-maze/src/glad.c
@@ -1598,4 +1600,448 @@
 
 1511915438 source:/home/leich/fcg-the-homogeneous-cow-maze/src/tiny_obj_loader.cpp
 	"tiny_obj_loader.h"
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio.hpp
+	<SFML/System.hpp>
+	<SFML/Audio/InputSoundFile.hpp>
+	<SFML/Audio/Listener.hpp>
+	<SFML/Audio/Music.hpp>
+	<SFML/Audio/OutputSoundFile.hpp>
+	<SFML/Audio/Sound.hpp>
+	<SFML/Audio/SoundBuffer.hpp>
+	<SFML/Audio/SoundBufferRecorder.hpp>
+	<SFML/Audio/SoundFileFactory.hpp>
+	<SFML/Audio/SoundFileReader.hpp>
+	<SFML/Audio/SoundFileWriter.hpp>
+	<SFML/Audio/SoundRecorder.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/Audio/SoundStream.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Clock.hpp>
+	<SFML/System/Err.hpp>
+	<SFML/System/FileInputStream.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/Lock.hpp>
+	<SFML/System/MemoryInputStream.hpp>
+	<SFML/System/Mutex.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<SFML/System/Sleep.hpp>
+	<SFML/System/String.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/ThreadLocal.hpp>
+	<SFML/System/ThreadLocalPtr.hpp>
+	<SFML/System/Time.hpp>
+	<SFML/System/Utf.hpp>
+	<SFML/System/Vector2.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486750798 c:\sfml-2.4.2\include\sfml\config.hpp
+	"TargetConditionals.h"
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\clock.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Time.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\export.hpp
+	<SFML/Config.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\time.hpp
+	<SFML/System/Export.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\err.hpp
+	<SFML/System/Export.hpp>
+	<ostream>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\fileinputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Export.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdio>
+	<string>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\inputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Export.hpp>
+
+1486750856 c:\sfml-2.4.2\include\sfml\system\noncopyable.hpp
+	<SFML/System/Export.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\lock.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\memoryinputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/Export.hpp>
+	<cstdlib>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\mutex.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\sleep.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Time.hpp>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\string.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Utf.hpp>
+	<iterator>
+	<locale>
+	<string>
+	<SFML/System/String.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\utf.hpp
+	<SFML/Config.hpp>
+	<algorithm>
+	<locale>
+	<string>
+	<cstdlib>
+	<SFML/System/Utf.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\utf.inl
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\string.inl
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\thread.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdlib>
+	<SFML/System/Thread.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\thread.inl
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\threadlocal.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdlib>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\threadlocalptr.hpp
+	<SFML/System/ThreadLocal.hpp>
+	<SFML/System/ThreadLocalPtr.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\threadlocalptr.inl
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\vector2.hpp
+	<SFML/System/Vector2.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\vector2.inl
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\vector3.hpp
+	<SFML/System/Vector3.inl>
+
+1486750800 c:\sfml-2.4.2\include\sfml\system\vector3.inl
+
+1486750856 c:\sfml-2.4.2\include\sfml\audio\inputsoundfile.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\export.hpp
+	<SFML/Config.hpp>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\listener.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486750856 c:\sfml-2.4.2\include\sfml\audio\music.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundStream.hpp>
+	<SFML/Audio/InputSoundFile.hpp>
+	<SFML/System/Mutex.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+	<vector>
+
+1486750856 c:\sfml-2.4.2\include\sfml\audio\soundstream.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/Time.hpp>
+	<SFML/System/Mutex.hpp>
+	<cstdlib>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundsource.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\alresource.hpp
+	<SFML/Audio/Export.hpp>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\outputsoundfile.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<string>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\sound.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/System/Time.hpp>
+	<cstdlib>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundbuffer.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+	<vector>
+	<set>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundbufferrecorder.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundBuffer.hpp>
+	<SFML/Audio/SoundRecorder.hpp>
+	<vector>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundrecorder.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/Time.hpp>
+	<vector>
+	<string>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundfilefactory.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
+	<vector>
+	<SFML/Audio/SoundFileFactory.inl>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundfilefactory.inl
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundfilereader.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
+
+1486750798 c:\sfml-2.4.2\include\sfml\audio\soundfilewriter.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio.hpp
+	<SFML/System.hpp>
+	<SFML/Audio/InputSoundFile.hpp>
+	<SFML/Audio/Listener.hpp>
+	<SFML/Audio/Music.hpp>
+	<SFML/Audio/OutputSoundFile.hpp>
+	<SFML/Audio/Sound.hpp>
+	<SFML/Audio/SoundBuffer.hpp>
+	<SFML/Audio/SoundBufferRecorder.hpp>
+	<SFML/Audio/SoundFileFactory.hpp>
+	<SFML/Audio/SoundFileReader.hpp>
+	<SFML/Audio/SoundFileWriter.hpp>
+	<SFML/Audio/SoundRecorder.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/Audio/SoundStream.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Clock.hpp>
+	<SFML/System/Err.hpp>
+	<SFML/System/FileInputStream.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/Lock.hpp>
+	<SFML/System/MemoryInputStream.hpp>
+	<SFML/System/Mutex.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<SFML/System/Sleep.hpp>
+	<SFML/System/String.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/ThreadLocal.hpp>
+	<SFML/System/ThreadLocalPtr.hpp>
+	<SFML/System/Time.hpp>
+	<SFML/System/Utf.hpp>
+	<SFML/System/Vector2.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\config.hpp
+	"TargetConditionals.h"
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\clock.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Time.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\export.hpp
+	<SFML/Config.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\time.hpp
+	<SFML/System/Export.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\err.hpp
+	<SFML/System/Export.hpp>
+	<ostream>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\fileinputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Export.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdio>
+	<string>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\inputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/Export.hpp>
+
+1486740055 c:\sfml-2.4.2-32b\include\sfml\system\noncopyable.hpp
+	<SFML/System/Export.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\lock.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\memoryinputstream.hpp
+	<SFML/Config.hpp>
+	<SFML/System/InputStream.hpp>
+	<SFML/System/Export.hpp>
+	<cstdlib>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\mutex.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\sleep.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Time.hpp>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\string.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/Utf.hpp>
+	<iterator>
+	<locale>
+	<string>
+	<SFML/System/String.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\utf.hpp
+	<SFML/Config.hpp>
+	<algorithm>
+	<locale>
+	<string>
+	<cstdlib>
+	<SFML/System/Utf.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\utf.inl
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\string.inl
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\thread.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdlib>
+	<SFML/System/Thread.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\thread.inl
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\threadlocal.hpp
+	<SFML/System/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<cstdlib>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\threadlocalptr.hpp
+	<SFML/System/ThreadLocal.hpp>
+	<SFML/System/ThreadLocalPtr.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\threadlocalptr.inl
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\vector2.hpp
+	<SFML/System/Vector2.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\vector2.inl
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\vector3.hpp
+	<SFML/System/Vector3.inl>
+
+1486739998 c:\sfml-2.4.2-32b\include\sfml\system\vector3.inl
+
+1486740055 c:\sfml-2.4.2-32b\include\sfml\audio\inputsoundfile.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\export.hpp
+	<SFML/Config.hpp>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\listener.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486740055 c:\sfml-2.4.2-32b\include\sfml\audio\music.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundStream.hpp>
+	<SFML/Audio/InputSoundFile.hpp>
+	<SFML/System/Mutex.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+	<vector>
+
+1486740055 c:\sfml-2.4.2-32b\include\sfml\audio\soundstream.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/Time.hpp>
+	<SFML/System/Mutex.hpp>
+	<cstdlib>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundsource.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Vector3.hpp>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\alresource.hpp
+	<SFML/Audio/Export.hpp>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\outputsoundfile.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/System/NonCopyable.hpp>
+	<string>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\sound.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundSource.hpp>
+	<SFML/System/Time.hpp>
+	<cstdlib>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundbuffer.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Time.hpp>
+	<string>
+	<vector>
+	<set>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundbufferrecorder.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/SoundBuffer.hpp>
+	<SFML/Audio/SoundRecorder.hpp>
+	<vector>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundrecorder.hpp
+	<SFML/Audio/Export.hpp>
+	<SFML/Audio/AlResource.hpp>
+	<SFML/System/Thread.hpp>
+	<SFML/System/Time.hpp>
+	<vector>
+	<string>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundfilefactory.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
+	<vector>
+	<SFML/Audio/SoundFileFactory.inl>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundfilefactory.inl
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundfilereader.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
+
+1486739997 c:\sfml-2.4.2-32b\include\sfml\audio\soundfilewriter.hpp
+	<SFML/Audio/Export.hpp>
+	<string>
 

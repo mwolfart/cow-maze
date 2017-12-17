@@ -54,10 +54,14 @@
 			<Add option="-Wall" />
 			<Add option="-Wno-unused-function" />
 			<Add directory="include" />
+			<Add directory="C:/SFML-2.4.2-32b/include" />
 		</Compiler>
 		<Linker>
 			<Add option="lib\libglfw3.a -lgdi32 -lopengl32" />
+			<Add library="sfml-audio" />
+			<Add library="sfml-system" />
 			<Add directory="lib" />
+			<Add directory="C:/SFML-2.4.2-32b/lib" />
 		</Linker>
 		<Unit filename="include/GLFW/glfw3.h" />
 		<Unit filename="include/GLFW/glfw3native.h" />

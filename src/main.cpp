@@ -16,6 +16,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <windows.h>
+
+#include <SFML/Audio.hpp>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -302,6 +305,18 @@ bool death_by_water = false;
 bool death_by_enemy = false;
 int death_timer = 1000;
 
+// Sons
+sf::SoundBuffer menucursorsound;
+sf::SoundBuffer menuentersound;
+sf::SoundBuffer keysound;
+sf::SoundBuffer cowsound;
+sf::SoundBuffer doorsound;
+sf::SoundBuffer splashsound;
+sf::SoundBuffer ball1sound;
+sf::SoundBuffer deathsound;
+sf::SoundBuffer winsound;
+sf::Sound       sound;
+
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
 GLuint fragment_shader_id;
@@ -394,6 +409,139 @@ int main(int argc, char* argv[])
     ComputeNormals(&jetmodel);
     BuildTrianglesAndAddToVirtualScene(&jetmodel);
 
+    // Sounds
+    const char* menucursorsoundpath = "../../data/sound/menucursor.wav";
+    printf("Carregando som \"%s\" ... ", menucursorsoundpath);
+    if (!menucursorsound.loadFromFile(menucursorsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* menuentersoundpath = "../../data/sound/menuenter.wav";
+    printf("Carregando som \"%s\" ... ", menuentersoundpath);
+    if (!menuentersound.loadFromFile(menuentersoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* keysoundpath = "../../data/sound/key.wav";
+    printf("Carregando som \"%s\" ... ", keysoundpath);
+    if (!keysound.loadFromFile(keysoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* cowsoundpath = "../../data/sound/cow.wav";
+    printf("Carregando som \"%s\" ... ", cowsoundpath);
+    if (!cowsound.loadFromFile(cowsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* doorsoundpath = "../../data/sound/door.wav";
+    printf("Carregando som \"%s\" ... ", doorsoundpath);
+    if (!doorsound.loadFromFile(doorsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* splashsoundpath = "../../data/sound/splash.wav";
+    printf("Carregando som \"%s\" ... ", splashsoundpath);
+    if (!splashsound.loadFromFile(splashsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* ball1soundpath = "../../data/sound/ball1.wav";
+    printf("Carregando som \"%s\" ... ", ball1soundpath);
+    if (!ball1sound.loadFromFile(ball1soundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* deathsoundpath = "../../data/sound/death.wav";
+    printf("Carregando som \"%s\" ... ", deathsoundpath);
+    if (!deathsound.loadFromFile(deathsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    const char* winsoundpath = "../../data/sound/win.wav";
+    printf("Carregando som \"%s\" ... ", winsoundpath);
+    if (!winsound.loadFromFile(winsoundpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+
+    // Music
+    sf::Music menumusic;
+    const char* menumusicpath = "../../data/music/velapax.ogg";
+    printf("Carregando música \"%s\" ... ", menumusicpath);
+    if (!menumusic.openFromFile(menumusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    menumusic.setLoop(true);
+
+    sf::Music techmusic;
+    const char* techmusicpath = "../../data/music/landingbase.ogg";
+    printf("Carregando música \"%s\" ... ", techmusicpath);
+    if (!techmusic.openFromFile(techmusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    techmusic.setLoop(true);
+
+    sf::Music watermusic;
+    const char* watermusicpath = "../../data/music/highway.ogg";
+    printf("Carregando música \"%s\" ... ", watermusicpath);
+    if (!watermusic.openFromFile(watermusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    watermusic.setLoop(true);
+
+    sf::Music naturemusic;
+    const char* naturemusicpath = "../../data/music/strshine.ogg";
+    printf("Carregando música \"%s\" ... ", naturemusicpath);
+    if (!naturemusic.openFromFile(naturemusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    naturemusic.setLoop(true);
+
+    sf::Music spookymusic;
+    const char* spookymusicpath = "../../data/music/losses.ogg";
+    printf("Carregando música \"%s\" ... ", spookymusicpath);
+    if (!spookymusic.openFromFile(spookymusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    spookymusic.setLoop(true);
+
+    sf::Music spacemusic;
+    const char* spacemusicpath = "../../data/music/lax_here.ogg";
+    printf("Carregando música \"%s\" ... ", spacemusicpath);
+    if (!spacemusic.openFromFile(spacemusicpath)) {
+        printf("Falha ao carregar!\n");
+        return -1;
+    }
+    printf(" OK!\n");
+    spacemusic.setLoop(true);
 
     if ( argc > 1 )
     {
@@ -415,6 +563,8 @@ int main(int argc, char* argv[])
     glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	menumusic.play();
+
     current_screen = 1;
     int curlevel = 1;
 
@@ -424,8 +574,45 @@ int main(int argc, char* argv[])
     		current_screen = RenderMainMenu(window);
 
     	// Render level
-    	if (current_screen == 2)
+    	if (current_screen == 2) {
+            menumusic.stop();
+            switch(curlevel){
+            case 1:
+            case 2:{
+                techmusic.play();
+                break;
+            }
+            case 3:
+            case 5:{
+                naturemusic.play();
+                break;
+            }
+            case 4:
+            case 9:{
+                watermusic.play();
+                break;
+            }
+            case 6:
+            case 8:{
+                spookymusic.play();
+                break;
+            }
+            case 7:
+            case 10:{
+                spacemusic.play();
+                break;
+            }
+            }
     		current_screen = RenderLevel(curlevel, window);
+    		if ((current_screen <= 3 && current_screen >= 2) || curlevel != 1) {
+                techmusic.stop();
+                naturemusic.stop();
+                watermusic.stop();
+                spacemusic.stop();
+                spookymusic.stop();
+                menumusic.play();
+            }
+        }
 
     	// Next level
     	if (current_screen == 3) {
@@ -465,15 +652,21 @@ int RenderMainMenu(GLFWwindow* window) {
 
         if (key_w_pressed and menu_position > 0) {
         	menu_position--;
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_w_pressed = false;
         }
 
         if (key_s_pressed and menu_position < 2) {
         	menu_position++;
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_s_pressed = false;
         }
 
         if (key_space_pressed) {
+            sound.setBuffer(menuentersound);
+        	sound.play();
         	switch(menu_position) {
         	case 0: return 2;
         	case 1: return 4;
@@ -546,30 +739,43 @@ int RenderLevelSelection(GLFWwindow* window) {
 
         glUseProgram(program_id);
 
-        if (esc_pressed)
+        if (esc_pressed) {
+            sound.setBuffer(menuentersound);
+        	sound.play();
         	return 1;
+        }
 
         if ((key_w_pressed and menu_position > 0) && !choosing_level) {
         	menu_position--;
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_w_pressed = false;
         } else if (key_w_pressed && choosing_level) {
         	chosen_level = std::max(chosen_level-1, 1);
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_w_pressed = false;
         }
 
         if ((key_s_pressed and menu_position < 1) && !choosing_level) {
         	menu_position++;
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_s_pressed = false;
         } else if (key_s_pressed && choosing_level) {
         	chosen_level = std::min(chosen_level+1, 10);
+        	sound.setBuffer(menucursorsound);
+        	sound.play();
         	key_s_pressed = false;
         }
 
         if (key_space_pressed) {
+            sound.setBuffer(menuentersound);
+        	sound.play();
         	key_space_pressed = false;
         	switch(menu_position) {
         	case 0: {
-        		choosing_level = !choosing_level; 
+        		choosing_level = !choosing_level;
         		break;
         	}
         	case 1: return chosen_level;
@@ -678,10 +884,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         	if (death_timer <= 0) {
         		death_by_water = false;
         		death_timer = 1000;
-        		player_position = GetPlayerSpawnCoordinates(level.plant);
-    			camera_lookat_l = player_position;
-    			straight_vector_sign = 1.0f;
-				sideways_vector_sign = 0.0f;
+				return 2;
         	}
         }
         else if (death_by_enemy) {
@@ -689,10 +892,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         	if (death_timer <= 0) {
         		death_by_enemy = false;
         		death_timer = 1000;
-        		player_position = GetPlayerSpawnCoordinates(level.plant);
-    			camera_lookat_l = player_position;
-    			straight_vector_sign = 1.0f;
-				sideways_vector_sign = 0.0f;
+        		return 2;
         	}
         }
         else MovePlayer();
@@ -1296,10 +1496,10 @@ vecInt GetObjectsCollidingWithPlayer(vec4 player_position) {
 // Dado os limites de dois objetos (os dois cantos), verifica se os dois colidem ou não
 bool TestCubeCollision(vec4 obj1_pos, vec4 obj2_pos, vec3 obj1_size, vec3 obj2_size) {
 	float epsilon = 0.0f;
-	if ( 
+	if (
    		((obj1_pos.x - epsilon <= obj2_pos.x && obj2_pos.x < obj1_pos.x + obj1_size.x + epsilon) || (obj2_pos.x - epsilon <= obj1_pos.x && obj1_pos.x < obj2_pos.x + obj2_size.x + epsilon)) &&
    		((obj1_pos.y <= obj2_pos.y && obj2_pos.y < obj1_pos.y + obj1_size.y) || (obj2_pos.y <= obj1_pos.y && obj1_pos.y < obj2_pos.y + obj2_size.y)) &&
-   		((obj1_pos.z - epsilon <= obj2_pos.z && obj2_pos.z < obj1_pos.z + obj1_size.z + epsilon) || (obj2_pos.z - epsilon <= obj1_pos.z && obj1_pos.z < obj2_pos.z + obj2_size.z + epsilon)) 
+   		((obj1_pos.z - epsilon <= obj2_pos.z && obj2_pos.z < obj1_pos.z + obj1_size.z + epsilon) || (obj2_pos.z - epsilon <= obj1_pos.z && obj1_pos.z < obj2_pos.z + obj2_size.z + epsilon))
    		)
 		return true;
 	else return false;
@@ -1469,6 +1669,8 @@ void MoveVolleyBall(int ball_index) {
 	    }
 	}
 	else {
+        sound.setBuffer(ball1sound);
+        sound.play();
 		map_objects[ball_index].gravity = -0.2f;
 	}
 }
@@ -1548,6 +1750,8 @@ void MoveBlock(int block_index) {
 		// Testa se atingiu água. Se atingiu, transforma-a em sujeira.
 		int water_index = GetVectorObjectType(collided_objects, WATER);
 		if (water_index >= 0) {
+            sound.setBuffer(splashsound);
+        	sound.play();
 		    map_objects[block_index].object_position = map_objects[water_index].object_position;
 		    map_objects[water_index].object_type = DIRT;
 		    map_objects.erase(map_objects.begin() + block_index);
@@ -1557,6 +1761,11 @@ void MoveBlock(int block_index) {
 
 // Destranca portas
 void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
+    if(red.size() + green.size() + blue.size() + yellow.size() > 0) {
+        sound.setBuffer(doorsound);
+        sound.play();
+    }
+
 	for (unsigned int i = 0; i < yellow.size(); i++) {
 		collected_keys[3]--;
 		map_objects.erase(map_objects.begin() + (yellow[yellow.size() - 1 - i]));
@@ -1627,6 +1836,8 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
 		int curr_obj_index = vector_objects[curr_index];
 		if (map_objects[curr_obj_index].object_type == COW) {
 			if (collected_babies == level_babies) {
+			    sound.setBuffer(winsound);
+                sound.play();
 				endmap = true;
 				return false;
 			} else
@@ -1723,26 +1934,39 @@ void MovePlayer() {
 		    int collided_bluekey_index = GetVectorObjectType(collided_objects, KEY_BLUE);
 		    int collided_yellowkey_index = GetVectorObjectType(collided_objects, KEY_YELLOW);
 		    int collided_baby_index = GetVectorObjectType(collided_objects, BABYCOW);
-		    
-		    if (CollidedWithEnemy(collided_objects))
+
+		    if (CollidedWithEnemy(collided_objects)) {
 		    	death_by_enemy = true;
+		    	sound.setBuffer(deathsound);
+                sound.play();
+		    }
 		    else if (GetVectorObjectType(collided_objects, WATER) >= 0) {
 		        death_by_water = true;
 		    } else if (collided_dirt_index >= 0) {
 		        map_objects[collided_dirt_index].object_type = FLOOR;
 		    } else if (collided_redkey_index >= 0) {
+		        sound.setBuffer(keysound);
+                sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_redkey_index);
 		    	collected_keys[0]++;
 		    } else if (collided_greenkey_index >= 0) {
+		        sound.setBuffer(keysound);
+                sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_greenkey_index);
 		    	collected_keys[1]++;
 		    } else if (collided_bluekey_index >= 0) {
+		        sound.setBuffer(keysound);
+                sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_bluekey_index);
 		    	collected_keys[2]++;
 		    } else if (collided_yellowkey_index >= 0) {
+		        sound.setBuffer(keysound);
+                sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_yellowkey_index);
 		    	collected_keys[3]++;
 		    } else if (collided_baby_index >= 0) {
+		        sound.setBuffer(cowsound);
+                sound.play();
 		    	map_objects.erase(map_objects.begin() + collided_baby_index);
 		    	collected_babies++;
 		    }
