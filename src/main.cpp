@@ -367,8 +367,14 @@ vec4 camera_view_vector = camera_xz_direction; // Vetor "view", sentido para ond
 vec4 camera_up_vector   = vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 vec4 camera_u_vector    = crossproduct(camera_up_vector, -camera_view_vector); // Vetor U da câmera (aponta para a lateral)
 
+// Variável de controle de mudança de câmera
+bool g_ChangedCamera = false;
+
 // Inventário do jogador
 Inventory player_inventory;
+
+// Nível atual
+int g_CurrentLevel = 0;
 
 // Número de vacas em um nível
 int g_LevelCowAmount;
@@ -529,7 +535,7 @@ int main(int argc, char* argv[])
     // Inicializações para o menu
 	PlayMenuMusic();
     g_CurrentScreen = SCREEN_MAINMENU;
-    int current_level = 1;
+    g_CurrentLevel = 1;
 
     // Rodamos o jogo até que o jogador peça para sair
     while (g_CurrentScreen > 0) {
@@ -539,25 +545,25 @@ int main(int argc, char* argv[])
 
     	// Render level
     	if (g_CurrentScreen == SCREEN_GAME) {
-            PlayLevelMusic(current_level);
-    		g_CurrentScreen = RenderLevel(current_level, window);
-    		if ((g_CurrentScreen != SCREEN_GAME && g_CurrentScreen != SCREEN_NEXTLEVEL) || current_level != 1)
+            PlayLevelMusic(g_CurrentLevel);
+    		g_CurrentScreen = RenderLevel(g_CurrentLevel, window);
+    		if ((g_CurrentScreen != SCREEN_GAME && g_CurrentScreen != SCREEN_NEXTLEVEL) || g_CurrentLevel != 1)
                 PlayMenuMusic();
         }
 
     	// Next level
     	if (g_CurrentScreen == SCREEN_NEXTLEVEL) {
-    		current_level++;
+    		g_CurrentLevel++;
     		g_CurrentScreen = SCREEN_GAME;
     	}
 
     	// Select level
     	if (g_CurrentScreen == SCREEN_LEVELSELECT) {
-    		current_level = RenderLevelSelection(window);
-            if (current_level > 0)
+    		g_CurrentLevel = RenderLevelSelection(window);
+            if (g_CurrentLevel > 0)
     		  g_CurrentScreen = SCREEN_GAME;
             else {
-                current_level = 1;
+                g_CurrentLevel = 1;
                 g_CurrentScreen = SCREEN_MAINMENU;
             }
     	}
@@ -656,7 +662,7 @@ int RenderMainMenu(GLFWwindow* window) {
         if (key_space_pressed) {
             PlaySound(&menuentersound);
         	switch(menu_position) {
-        	case 0: return SCREEN_GAME;
+        	case 0: g_CurrentLevel = 1; return SCREEN_GAME;
         	case 1: return SCREEN_LEVELSELECT;
         	case 2: return SCREEN_EXIT;
         	}
@@ -840,6 +846,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
     sideways_vector_sign = 0.0f;
     player_direction = vec4(0.0f, 0.0f, 1.0f, 0.0f);
     g_CameraTheta = PI;
+    g_ChangedCamera = false;
     g_CameraPhi = 0.0f;
     g_CameraDistance = 2.5f;
     camera_position_c  = player_position;
@@ -887,6 +894,10 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         if (g_useFirstPersonCamera) {
             // First-person
             camera_position_c = AdjustFPSCamera(player_position);
+            if (g_ChangedCamera) {
+                camera_view_vector = player_direction;
+                g_ChangedCamera = false;
+            }
         }
         else {
             // LookAt (third-person)
@@ -2919,8 +2930,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_ShowInfoText = !g_ShowInfoText;
     }
 
-    if (key == GLFW_KEY_C && action == GLFW_PRESS && g_CurrentScreen == SCREEN_GAME)
+    if (key == GLFW_KEY_C && action == GLFW_PRESS && g_CurrentScreen == SCREEN_GAME) {
+        g_ChangedCamera = true;
         g_useFirstPersonCamera = !(g_useFirstPersonCamera);
+    }
 
     // Verifica se as teclas de movimentação foram pressionadas/soltas
     if (key == GLFW_KEY_W && action == GLFW_PRESS)
@@ -2967,6 +2980,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_MusicOn = !g_MusicOn;
         if (!g_MusicOn)
             StopAllMusic();
+        else {
+            if (g_CurrentScreen != SCREEN_GAME)
+                PlayMenuMusic();
+            else PlayLevelMusic(g_CurrentLevel);
+        }
     }
 
     if (key == GLFW_KEY_N && action == GLFW_PRESS) {
