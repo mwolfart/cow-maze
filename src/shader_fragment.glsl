@@ -66,6 +66,11 @@ uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
+
+#define WALLGROUNDGRASS_W 841
+#define WALLGROUNDGRASS_H 305
+
 
 // Variável de controle da animação
 uniform int anim_timer;
@@ -78,6 +83,10 @@ out vec4 color;
 // Constantes
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
+
+int getPx(int coordsTextureX, int width, int num_tiles_horizontal, int texture_num);
+int getPy(int coordsTextureY, int height, int num_tiles_vertical, int texture_num);
+
 
 highp float rand(vec2 co)
 {
@@ -95,6 +104,7 @@ void main()
     // sistema de coordenadas da câmera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 camera_position = inverse(view) * origin;
+
 
     // O fragmento atual é coberto por um ponto que percente à superfície de um
     // dos objetos virtuais da cena. Este ponto, p, possui uma posição no
@@ -314,4 +324,13 @@ void main()
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color = pow(color, vec4(1.0,1.0,1.0,1.0)/2.2);
+}
+
+int getPx(int coordsTextureX, int width, int num_tiles_horizontal, int texture_num)
+{
+    int minx = (widht/num_tiles_horizontal) * texture_num;
+    int maxx = (widht/num_tiles_horizontal) * (texture_num + 1);
+    int widthpos = (coordsTextureX - minx)/(maxx - minx);
+
+    return widthpos;
 }

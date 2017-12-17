@@ -16,7 +16,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
-#include <windows.h>
 
 #include <SFML/Audio.hpp>
 
@@ -379,6 +378,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/animated/water13.png");    // TextureImage6
     LoadTextureImage("../../data/textures/dirt.png");    			 // TextureImage7
     LoadTextureImage("../../data/textures/dirtblock.png");    		 // TextureImage8
+    LoadTextureImage("../../data/textures/wallgroundgrass.png");    // TextureImage9
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -2353,6 +2353,8 @@ void LoadShadersFromFiles() {
     glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
+
 
     glUseProgram(0);
 }
