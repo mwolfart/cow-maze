@@ -144,11 +144,13 @@ void ShowInventory(GLFWwindow* window, int level_time);
 
 // Controle de um nível
 void ClearInventory();
+int GetCowMotherPosition();
 void RegisterLevelObjects(Level level);
 void RegisterFloor(float x, float z, int theme);
 void RegisterObjectInMapVector(string tile_type, float x, float z, int theme);
 void RegisterObjectInMap(int obj_id, vec4 obj_position, vec3 obj_size, const char * obj_file_name, vec3 model_size, int direction = 0, float gravity = 0);
 vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant);
+void BobCow();
 
 // Desenho
 void DrawMapObjects();
@@ -330,6 +332,7 @@ int g_CurrentScreen = SCREEN_MAINMENU;
 // Angulos de rotação dos itens
 // utilizado para controlar a rotação dos itens
 float g_ItemAngleY = 0.0f;
+float g_CowAngleY = 0.0f;
 
 // Variável de controle de encerramento de nível
 bool g_MapEnded = false;
@@ -967,6 +970,8 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         if (!g_ShowingMessage)
             MoveEnemies();    // Movimenta inimigos
 
+        BobCow();
+
         ////////////
         // SKYBOX //
         ////////////
@@ -992,6 +997,11 @@ int RenderLevel(int level_number, GLFWwindow* window) {
 		g_ItemAngleY += ITEM_ROTATION_SPEED;
 		if (g_ItemAngleY >= 2*PI)
 			g_ItemAngleY = 0;
+
+        // Rotação da vaca mãe
+        g_CowAngleY += ITEM_ROTATION_SPEED / 4;
+        if (g_CowAngleY >= 2*PI)
+            g_CowAngleY = 0;
 
 		// Fogo: partículas
 		AnimateParticles();
@@ -1047,6 +1057,15 @@ void ShowInventory(GLFWwindow* window, int level_time) {
 void ClearInventory() {
     player_inventory.keys = {0,0,0,0};
     player_inventory.cows = 0;
+}
+
+// Retorna a posição da vaca mãe no vetor de objetos
+int GetCowMotherPosition() {
+    for(unsigned int i=0; i < map_objects.size(); i++) {
+        if (map_objects[i].object_type == COW)
+            return i;
+    }
+    return -1;
 }
 
 // Função que registra os objetos do nível com base na sua planta
@@ -1233,7 +1252,7 @@ void RegisterObjectInMapVector(string tile_type, float x, float z, int theme) {
 
     // Vaca mãe:
     case string2int("CW"):{
-        RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow", cow_size);
+        RegisterObjectInMap(COW, vec4(x, cow_vertical_shift, z, 1.0f), cow_size, "cow", cow_size, 1);
         RegisterFloor(x, z, theme);
         break;
     }
@@ -1340,6 +1359,23 @@ vec4 GetPlayerSpawnCoordinates(std::vector<std::vector<string>> plant) {
     return vec4(0.5f, 0.0f, 0.5f, 1.0f);
 }
 
+// Faz a vaca ficar levemente flutuando
+void BobCow() {
+    int index = GetCowMotherPosition();
+
+    // Queda
+    if (map_objects[index].direction == 0) {
+        if (map_objects[index].object_position.y > -0.5f)
+            map_objects[index].object_position.y -= 0.0025;
+        else map_objects[index].direction = 1;
+    } else {
+        // Elevação
+        if (map_objects[index].object_position.y < -0.2f)
+            map_objects[index].object_position.y += 0.0025;
+        else map_objects[index].direction = 0;
+    }
+}
+
 /////////////
 // DESENHO //
 /////////////
@@ -1362,6 +1398,10 @@ void DrawMapObjects() {
     		model = model * Matrix_Translate(-0.2f, 0.0f, 0.0f)
         		* Matrix_Rotate_Y(g_ItemAngleY)
         		* Matrix_Translate(0.2f, 0.0f, 0.0f);
+        } else if (obj_type == COW) {
+            model = model * Matrix_Translate(-0.2f, 0.0f, 0.0f)
+                * Matrix_Rotate_Y(g_CowAngleY)
+                * Matrix_Translate(0.2f, 0.0f, 0.0f);
         } else if (obj_type == FIRE) {
         	GenerateParticles(5, current_object.object_position, current_object.model_size);
         	DrawParticles();

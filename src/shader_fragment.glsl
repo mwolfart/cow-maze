@@ -139,23 +139,32 @@ void main()
 
     if ( object_id == COW )
     {
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        vec4 p_vector = position_model - bbox_center;
 
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
+        float px = position_model[0];
+        float py = position_model[1];
+        float pz = position_model[2];
 
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
+        float rho = sqrt(pow(px,2) + pow(py,2) + pow(pz, 2));
+        float theta = atan(px, pz);
+        float phi = asin(py/rho);
 
-        U = (position_model[0] - minx)/(maxx - minx);
-        V = (position_model[1] - miny)/(maxy - miny);
+        U = (theta + M_PI) / (2 * M_PI);
+        V = (phi + M_PI/2) / M_PI;
 
-        U = U/4;
-        V = V/4;
+        U = (U + 3)/ 4;
+        V = (V + 0)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
-        color = Kd;
+        Ks = vec4(0.5, 0.5, 0.5, 0.0f);
+        Ka = texture(TextureImage0, vec2(U,V)).rgba;
+        q = 5.0;
+
+        vec4 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec4 ambient_term = Ka * Ia;
+        vec4 phong_specular_term  = Ks * I * pow((max(0, dot(r, v))), q);
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
     else if ( object_id == FLOOR )
     {
