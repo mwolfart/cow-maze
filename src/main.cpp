@@ -256,11 +256,15 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
 #define WOOD        26
 #define SNOW        27
 #define DARKFLOOR   28
+#define SNOWBLOCK   29
+#define CRYSTAL     30
+#define DARKDIRT    31
+#define DARKROCK    32
 
-#define KEY_RED 	30
-#define KEY_GREEN 	31
-#define KEY_BLUE	32
-#define KEY_YELLOW 	33
+#define KEY_RED 	40
+#define KEY_GREEN 	41
+#define KEY_BLUE	42
+#define KEY_YELLOW 	43
 
 #define PLAYER_HEAD 	60
 #define PLAYER_TORSO 	61
@@ -401,8 +405,7 @@ sf::Music menumusic;
 sf::Music techmusic;
 sf::Music watermusic;
 sf::Music naturemusic;
-sf::Music spookymusic;
-sf::Music spacemusic;
+sf::Music crystalmusic;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -508,8 +511,7 @@ int main(int argc, char* argv[])
     LoadMusicFromFile("../../data/music/landingbase.ogg", &techmusic);
     LoadMusicFromFile("../../data/music/highway.ogg", &watermusic);
     LoadMusicFromFile("../../data/music/rock1.ogg", &naturemusic);
-    LoadMusicFromFile("../../data/music/losses.ogg", &spookymusic);
-    LoadMusicFromFile("../../data/music/lax_here.ogg", &spacemusic);
+    LoadMusicFromFile("../../data/music/lax_here.ogg", &crystalmusic);
 
     if ( argc > 1 )
     {
@@ -736,7 +738,7 @@ int RenderLevelSelection(GLFWwindow* window) {
 
         // Strings
         string enterlevel_text = "ENTER LEVEL: ";
-        string lvtext[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
+        string lvtext[] = {"01", "02", "03", "04", "05"};
         string go_text = "GO!";
 
         // Animação da vaca
@@ -764,7 +766,7 @@ int RenderLevelSelection(GLFWwindow* window) {
             PlaySound(&menucursorsound);
             key_s_pressed = false;
             if (choosing_level)
-                chosen_level = std::min(chosen_level+1, 10);
+                chosen_level = std::min(chosen_level+1, 5);
             else if (menu_position < 1)
                 menu_position++;
         }
@@ -1103,17 +1105,19 @@ void RegisterFloor(float x, float z, int theme) {
 
     switch(theme) {
         case 0:
-        case 2:
             RegisterObjectInMap(FLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
             break;
         case 1:
             RegisterObjectInMap(GRASS, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
             break;
-        case 3:
+        case 2:
             RegisterObjectInMap(DARKFLOOR, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
             break;
-        case 4:
+        case 3:
             RegisterObjectInMap(SNOW, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
+            break;
+        case 4:
+            RegisterObjectInMap(DARKDIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
             break;
     }    
 }
@@ -1167,8 +1171,27 @@ void RegisterObjectInMapVector(string tile_type, float x, float z, int theme) {
         break;
     }
 
+    // Madeira
     case string2int("WO"): {
         RegisterObjectInMap(WOOD, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        break;
+    }
+
+    // Bloco com neve
+    case string2int("SB"): {
+        RegisterObjectInMap(SNOWBLOCK, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        break;
+    }
+
+    // Rocha negra
+    case string2int("BR"): {
+        RegisterObjectInMap(DARKROCK, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
+        break;
+    }
+
+    // Cristal
+    case string2int("CR"): {
+        RegisterObjectInMap(CRYSTAL, vec4(x, cube_vertical_shift, z, 1.0f), cube_size, "cube", cube_size);
         break;
     }
 
@@ -1325,7 +1348,9 @@ void RegisterObjectInMapVector(string tile_type, float x, float z, int theme) {
     // Jogador e piso
     case string2int("PS"):
     case string2int("FF"):
-    case string2int("GR"):{
+    case string2int("GR"):
+    case string2int("SN"):
+    case string2int("DD"):{
         RegisterFloor(x, z, theme);
         break;
     }
@@ -1602,6 +1627,9 @@ float GetTileToleranceValue(int object_type) {
 	switch(object_type) {
     	case WALL:
         case WOOD:
+        case DARKROCK:
+        case CRYSTAL:
+        case SNOWBLOCK:
     	case DIRTBLOCK:
     	case DOOR_RED:
     	case DOOR_GREEN:
@@ -1620,6 +1648,9 @@ float GetTileToleranceValue(int object_type) {
     	case DIRT:
     	case WATER:
     	case FLOOR:
+        case GRASS:
+        case SNOW:
+        case DARKDIRT:
     	default: {
     		return -0.1f;
     	}
@@ -1725,9 +1756,9 @@ bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
 		int colliding_obj_type = map_objects[curr_obj_index].object_type;
 
 		// Adicione novos objetos bloqueantes aqui
-        if ((is_volleyball && colliding_obj_type == FLOOR) || 
+        if ((is_volleyball && isIn(colliding_obj_type, {FLOOR,GRASS,SNOW,DARKDIRT})) || 
             isIn(colliding_obj_type, {WALL, DIRTBLOCK, DIRT, DOOR_RED, DOOR_GREEN, DOOR_YELLOW, DOOR_BLUE,
-                                        COW, JET, BEACHBALL, VOLLEYBALL, WOOD}))
+                                        COW, JET, BEACHBALL, VOLLEYBALL, WOOD, SNOWBLOCK, DARKROCK,CRYSTAL}))
 			return true;
 
         // Caso seja uma bola de volei (quicando), deve-se levar em conta o chão também.
@@ -1751,8 +1782,11 @@ bool vectorHasPlayerBlockingObject(vecInt vector_objects) {
     // Primeiro verificamos se existem paredes
     while (curr_index < vector_objects.size()) {
         int curr_obj_index = vector_objects[curr_index];
-        if (isIn(map_objects[curr_obj_index].object_type, {WALL, WOOD}))
+        if (isIn(map_objects[curr_obj_index].object_type, {WALL, WOOD, SNOWBLOCK, DARKROCK, CRYSTAL})) {
+            if (map_objects[curr_obj_index].object_type == CRYSTAL)
+                g_DeathByEnemy = true;
             return true;
+        }
         curr_index++;
     }
 
@@ -1953,6 +1987,15 @@ void MovePlayer(int theme) {
                         break;
                     case 1:
                         map_objects[collided_dirt_index].object_type = GRASS;
+                        break;
+                    case 2:
+                        map_objects[collided_dirt_index].object_type = DARKFLOOR;
+                        break;
+                    case 3:
+                        map_objects[collided_dirt_index].object_type = SNOW;
+                        break;
+                    case 4:
+                        map_objects[collided_dirt_index].object_type = DARKDIRT;
                         break;
                     default:
                         map_objects[collided_dirt_index].object_type = FLOOR;
@@ -2724,28 +2767,19 @@ void PlayLevelMusic(int level_number) {
                 techmusic.play();
             break;
         }
-        case 3:
-        case 5:{
+        case 3:{
             if(naturemusic.getStatus() != 2)
                 naturemusic.play();
             break;
         }
-        case 4:
-        case 9:{
+        case 4:{
             if(watermusic.getStatus() != 2)
                 watermusic.play();
             break;
         }
-        case 6:
-        case 8:{
-            if(spookymusic.getStatus() != 2)
-                spookymusic.play();
-            break;
-        }
-        case 7:
-        case 10:{
-            if(spacemusic.getStatus() != 2)
-                spacemusic.play();
+        case 5:{
+            if(crystalmusic.getStatus() != 2)
+                crystalmusic.play();
             break;
         }
     }
@@ -2762,10 +2796,8 @@ void PlayMenuMusic() {
         naturemusic.stop();
     if (watermusic.getStatus() == 2)
         watermusic.stop();
-    if (spacemusic.getStatus() == 2)
-        spacemusic.stop();
-    if (spookymusic.getStatus() == 2)
-        spookymusic.stop();
+    if (crystalmusic.getStatus() == 2)
+        crystalmusic.stop();
     menumusic.play();
 }
 
@@ -2777,10 +2809,8 @@ void StopAllMusic() {
         naturemusic.stop();
     if (watermusic.getStatus() == 2)
         watermusic.stop();
-    if (spacemusic.getStatus() == 2)
-        spacemusic.stop();
-    if (spookymusic.getStatus() == 2)
-        spookymusic.stop();
+    if (crystalmusic.getStatus() == 2)
+        crystalmusic.stop();
     if (menumusic.getStatus() == 2)
         menumusic.stop(); 
 }

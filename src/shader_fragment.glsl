@@ -39,11 +39,15 @@ uniform mat4 projection;
 #define WOOD        26
 #define SNOW        27
 #define DARKFLOOR   28
+#define SNOWBLOCK   29
+#define CRYSTAL     30
+#define DARKDIRT    31
+#define DARKROCK    32
 
-#define KEY_RED     30
-#define KEY_GREEN   31
-#define KEY_BLUE    32
-#define KEY_YELLOW  33
+#define KEY_RED     40
+#define KEY_GREEN   41
+#define KEY_BLUE    42
+#define KEY_YELLOW  43
 
 #define PLAYER_HEAD     60
 #define PLAYER_TORSO    61
@@ -153,7 +157,7 @@ void main()
         U = (theta + M_PI) / (2 * M_PI);
         V = (phi + M_PI/2) / M_PI;
 
-        U = (U + 3)/ 4;
+        U = (U + 3)/ 5;
         V = (V + 0)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -168,7 +172,7 @@ void main()
     }
     else if ( object_id == FLOOR )
     {
-        U = (texcoords.x + 0)/ 4;
+        U = (texcoords.x + 0)/ 5;
         V = (texcoords.y + 3)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -201,7 +205,7 @@ void main()
     }
     else if ( object_id == WALL )
     {
-        U = (texcoords.x + 1)/4;
+        U = (texcoords.x + 1)/5;
         V = (texcoords.y + 3)/4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -209,15 +213,55 @@ void main()
     }
     else if ( object_id == DIRT )
     {
-        U = (texcoords.x + 3)/ 4;
+        U = (texcoords.x + 3)/ 5;
         V = (texcoords.y + 3)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == SNOWBLOCK )
+    {
+        U = (texcoords.x + 4)/ 5;
+        V = (texcoords.y + 0)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == CRYSTAL )
+    {
+        U = (texcoords.x + 4)/5;
+        V = (texcoords.y + 2)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == DARKDIRT )
+    {
+        U = (texcoords.x + 4)/ 5;
+        V = (texcoords.y + 3)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == SNOW )
+    {
+        U = (texcoords.x + 1)/ 5;
+        V = (texcoords.y + 0)/ 4;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgba;
+        color = Kd;
+    }
+    else if ( object_id == DARKROCK )
+    {
+        U = (texcoords.x + 4)/ 5;
+        V = (texcoords.y + 1)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
     else if ( object_id == GRASS ) 
     {
-        U = (texcoords.x + 2)/ 4;
+        U = (texcoords.x + 2)/ 5;
         V = (texcoords.y + 3)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -225,7 +269,7 @@ void main()
     }
     else if ( object_id == WOOD )
     {
-        U = (texcoords.x + 2)/ 4;
+        U = (texcoords.x + 2)/ 5;
         V = (texcoords.y + 0)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -233,7 +277,7 @@ void main()
     }
     else if ( object_id == DIRTBLOCK )
     {
-        U = (texcoords.x + 0)/ 4;
+        U = (texcoords.x + 0)/ 5;
         V = (texcoords.y + 2)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -254,10 +298,10 @@ void main()
         float maxz = bbox_max.z;
 
         if (y < (maxy - 0.01) && y > (miny+0.01)) {
-            U = (texcoords.x + 2)/ 4;
+            U = (texcoords.x + 2)/ 5;
             V = (texcoords.y + 2)/ 4;
         } else {
-            U = (texcoords.x + 2)/ 4;
+            U = (texcoords.x + 2)/ 5;
             V = (texcoords.y + 1)/ 4;
         }
 
@@ -278,10 +322,10 @@ void main()
         float maxz = bbox_max.z;
 
         if (y < (maxy - 0.01) && y > (miny+0.01)) {
-            U = (texcoords.x + 3)/ 4;
+            U = (texcoords.x + 3)/ 5;
             V = (texcoords.y + 2)/ 4;
         } else {
-            U = (texcoords.x + 2)/ 4;
+            U = (texcoords.x + 2)/ 5;
             V = (texcoords.y + 1)/ 4;
         }
 
@@ -302,10 +346,10 @@ void main()
         float maxz = bbox_max.z;
 
         if (y < (maxy - 0.01) && y > (miny+0.01)) {
-            U = (texcoords.x + 0)/ 4;
+            U = (texcoords.x + 0)/ 5;
             V = (texcoords.y + 1)/ 4;
         } else {
-            U = (texcoords.x + 2)/ 4;
+            U = (texcoords.x + 2)/ 5;
             V = (texcoords.y + 1)/ 4;
         }
 
@@ -326,10 +370,10 @@ void main()
         float maxz = bbox_max.z;
 
         if (y < (maxy - 0.01) && y > (miny+0.01)) {
-            U = (texcoords.x + 1)/ 4;
+            U = (texcoords.x + 1)/ 5;
             V = (texcoords.y + 1)/ 4;
         } else {
-            U = (texcoords.x + 2)/ 4;
+            U = (texcoords.x + 2)/ 5;
             V = (texcoords.y + 1)/ 4;
         }
 
@@ -417,7 +461,7 @@ void main()
         U = (theta + M_PI) / (2 * M_PI);
         V = (phi + M_PI/2) / M_PI;
 
-        U = (U + 3)/ 4;
+        U = (U + 3)/ 5;
         V = (V + 1)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
@@ -444,7 +488,7 @@ void main()
         U = (theta + M_PI) / (2 * M_PI);
         V = (phi + M_PI/2) / M_PI;
 
-        U = (U + 0)/ 4;
+        U = (U + 0)/ 5;
         V = (V + 0)/ 4;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
