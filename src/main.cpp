@@ -196,7 +196,7 @@ Level LoadLevelFromFile(string filepath);
 void LoadTextureImage(const char* filename);
 void LoadShadersFromFiles();
 GLuint LoadShader_Vertex(const char* filename);
-GLuint LoadShader_Fragment(const char* filename); 
+GLuint LoadShader_Fragment(const char* filename);
 void LoadShader(const char* filename, GLuint shader_id);
 void LoadSoundFromFile(const char* path, sf::SoundBuffer * buffer);
 void LoadMusicFromFile(const char* path, sf::Music * buffer);
@@ -347,6 +347,7 @@ bool key_w_pressed = false;
 bool key_a_pressed = false;
 bool key_s_pressed = false;
 bool key_d_pressed = false;
+bool key_r_pressed = false;
 bool key_space_pressed = false;
 bool esc_pressed = false;
 
@@ -464,6 +465,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/textures/textures.png");   		// TextureImage0
     LoadTextureImage("../../data/textures/water.png");              // TextureImage1
     LoadTextureImage("../../data/textures/abra.png");               // TextureImage2
+    LoadTextureImage("../../data/textures/frozen.png");             // TextureImage3
+    LoadTextureImage("../../data/textures/midnat.png");             // TextureImage4
 
     // Carregamento de models
     ObjModel spheremodel("../../data/objects/sphere.obj");
@@ -549,14 +552,19 @@ int main(int argc, char* argv[])
     	if (g_CurrentScreen == SCREEN_GAME) {
             PlayLevelMusic(g_CurrentLevel);
     		g_CurrentScreen = RenderLevel(g_CurrentLevel, window);
-    		if ((g_CurrentScreen != SCREEN_GAME && g_CurrentScreen != SCREEN_NEXTLEVEL) || g_CurrentLevel != 1)
+    		if ((g_CurrentScreen != SCREEN_GAME && g_CurrentScreen != SCREEN_NEXTLEVEL) || (g_CurrentLevel != 1 && g_CurrentScreen == SCREEN_NEXTLEVEL))
                 PlayMenuMusic();
         }
 
     	// Next level
     	if (g_CurrentScreen == SCREEN_NEXTLEVEL) {
     		g_CurrentLevel++;
-    		g_CurrentScreen = SCREEN_GAME;
+    		if (g_CurrentLevel > 5) {
+                g_CurrentLevel = 1;
+                g_CurrentScreen = SCREEN_MAINMENU;
+                PlayMenuMusic();
+            }
+    		else g_CurrentScreen = SCREEN_GAME;
     	}
 
     	// Select level
@@ -628,6 +636,7 @@ int RenderMainMenu(GLFWwindow* window) {
 	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	camera_view_vector = camera_lookat_l - camera_position_c;
+	g_CameraDistance = 2.5f;
     key_space_pressed = false;
     int menu_position = 0;
 
@@ -723,11 +732,12 @@ int RenderLevelSelection(GLFWwindow* window) {
     // Câmera fixa e presets
 	camera_lookat_l = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	camera_position_c = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	g_CameraDistance = 2.5f;
 	camera_view_vector = camera_lookat_l - camera_position_c;
 	key_space_pressed = false;
     int menu_position = 0;
     int chosen_level = 1;
-    bool choosing_level = false; 
+    bool choosing_level = false;
 
     // Renderizamos até retornar
 	while(true) {
@@ -850,14 +860,14 @@ int RenderLevel(int level_number, GLFWwindow* window) {
     g_CameraTheta = PI;
     g_ChangedCamera = false;
     g_CameraPhi = 0.0f;
-    g_CameraDistance = 2.5f;
+    g_CameraDistance = 3.5f;
     camera_position_c  = player_position;
     camera_xz_direction = vec4(0.0f, 0.0f, 2.0f, 0.0f);
     g_ShowingMessage = false;
 
     // Variável de controle da animação de morte
     int death_timer = 1000;
-    
+
     // Variável de controle do tempo do nível
     int map_timer = 30;
 
@@ -890,6 +900,11 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         if(g_MapEnded) {
             g_ShowingMessage = true;
             message = "Congratulations! You finished this level :)";
+        }
+
+        if (key_r_pressed) {
+            key_r_pressed = false;
+            return SCREEN_GAME;
         }
 
         // Controle do tipo de câmera
@@ -955,7 +970,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
                 player_position[1] -= 0.01f;
             else if (g_DeathByEnemy && death_timer >= 990)
                 PlaySound(&deathsound);
-        }           
+        }
         else MovePlayer(level.theme);
 
         // Ajusta vetores de direção
@@ -1002,7 +1017,7 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         // CASO DESEJA-SE ANIMÁ-LOS DE FORMA INDEPENDENTE, deve-se
         // copiar este trecho para cada switch na função de renderização.
         anim_timer = (anim_timer + 1) % ANIMATION_SPEED;
-        if (anim_timer == 0) 
+        if (anim_timer == 0)
         	curr_anim_tile = (curr_anim_tile+1) % 16;
 		glUniform1i(anim_timer_uniform, curr_anim_tile);
 
@@ -1032,10 +1047,10 @@ int RenderLevel(int level_number, GLFWwindow* window) {
         }
 
         // Mostra inventário na tela
-        ShowInventory(window, level.time); 
+        ShowInventory(window, level.time);
 
         // FPS
-        if (g_ShowInfoText) 
+        if (g_ShowInfoText)
             TextRendering_ShowFramesPerSecond(window);
 
         glfwSwapBuffers(window);
@@ -1119,7 +1134,7 @@ void RegisterFloor(float x, float z, int theme) {
         case 4:
             RegisterObjectInMap(DARKDIRT, vec4(x, floor_shift, z, 1.0f), tile_size, "plane", planemodel_size);
             break;
-    }    
+    }
 }
 
 // Função que registra um objeto em dada posição do mapa
@@ -1756,7 +1771,7 @@ bool vectorHasObjectBlockingObject(vecInt vector_objects, bool is_volleyball) {
 		int colliding_obj_type = map_objects[curr_obj_index].object_type;
 
 		// Adicione novos objetos bloqueantes aqui
-        if ((is_volleyball && isIn(colliding_obj_type, {FLOOR,GRASS,SNOW,DARKDIRT})) || 
+        if ((is_volleyball && isIn(colliding_obj_type, {FLOOR,GRASS,SNOW,DARKDIRT})) ||
             isIn(colliding_obj_type, {WALL, DIRTBLOCK, DIRT, DOOR_RED, DOOR_GREEN, DOOR_YELLOW, DOOR_BLUE,
                                         COW, JET, BEACHBALL, VOLLEYBALL, WOOD, SNOWBLOCK, DARKROCK,CRYSTAL}))
 			return true;
@@ -1877,7 +1892,7 @@ void UnlockDoors(vecInt red, vecInt green, vecInt blue, vecInt yellow) {
     // Se não existem portas, retorna
     if(red.size() + green.size() + blue.size() + yellow.size() == 0)
         return;
-    
+
     PlaySound(&doorsound);
 
     // Remove os itens dos vetores do fim pro início, pra não ter problema de remover coisas erradas
@@ -2115,7 +2130,7 @@ void MoveJet(int jet_index) {
         vec3 player_size = vec3(0.0f, 0.6f, 0.0f);
         if (BBoxCollision(player_position, target_pos, player_size, map_objects[jet_index].object_size, 0.0f))
             g_DeathByEnemy = true;
-    
+
         // Testa se atingiu fogo. Se atingiu, morre
         int fire_index = GetVectorObjectType(collided_objects, FIRE);
         if (fire_index >= 0) {
@@ -2123,7 +2138,9 @@ void MoveJet(int jet_index) {
         }
     }
     // Se colidiu, recomputa direção
-    else map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
+    else {
+        map_objects[jet_index].direction = (map_objects[jet_index].direction + 1) % 4;
+    }
 }
 
 // Função de movimentação da bola de praia
@@ -2186,7 +2203,7 @@ void MoveVolleyBall(int ball_index) {
 
         // Se colidiu com o player, mata ele
         vec3 player_size = vec3(0.0f, 0.6f, 0.0f);
-        if (BBoxCollision(player_position, target_pos, player_size, map_objects[ball_index].object_size, 0.0f)) 
+        if (BBoxCollision(player_position, target_pos, player_size, map_objects[ball_index].object_size, 0.0f))
             g_DeathByEnemy = true;
 
         // Testa se atingiu fogo ou água. Se atingiu, morre.
@@ -2518,7 +2535,7 @@ Level LoadLevelFromFile(string filepath) {
                 while (col < loaded_level.width) {
                     string tile;
                     for(int tilesize = 0; tilesize < 2; tilesize++) {
-                        tile += file_line[col * 3 + tilesize]; 
+                        tile += file_line[col * 3 + tilesize];
                     }
                     map_line.push_back(tile);
                     col++;
@@ -2812,7 +2829,7 @@ void StopAllMusic() {
     if (crystalmusic.getStatus() == 2)
         crystalmusic.stop();
     if (menumusic.getStatus() == 2)
-        menumusic.stop(); 
+        menumusic.stop();
 }
 
 // Toca um som
@@ -3004,6 +3021,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
     {
         key_d_pressed = false;
+    }
+
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        key_r_pressed = true;
     }
 
     if (key == GLFW_KEY_M && action == GLFW_PRESS) {

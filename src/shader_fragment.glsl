@@ -75,6 +75,8 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
 
 #define WALLGROUNDGRASS_W 841
 #define WALLGROUNDGRASS_H 305
@@ -259,7 +261,7 @@ void main()
         Kd = texture(TextureImage0, vec2(U,V)).rgba;
         color = Kd;
     }
-    else if ( object_id == GRASS ) 
+    else if ( object_id == GRASS )
     {
         U = (texcoords.x + 2)/ 5;
         V = (texcoords.y + 3)/ 4;
@@ -516,6 +518,10 @@ void main()
 
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     } else if ( object_id == SKYBOX_BOTTOM ) {
         U = (texcoords.x + 0)/ 3;
@@ -523,6 +529,10 @@ void main()
 
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     } else if ( object_id == SKYBOX_WEST ) {
         U = (texcoords.x + 2)/ 3;
@@ -530,20 +540,32 @@ void main()
 
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     } else if ( object_id == SKYBOX_EAST ) {
         U = (texcoords.x + 1)/ 3;
         V = (texcoords.y + 0)/ 2;
-    
+
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     } else if ( object_id == SKYBOX_SOUTH ) {
         U = (texcoords.x + 2)/ 3;
         V = (texcoords.y + 0)/ 2;
-    
+
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     } else if ( object_id == SKYBOX_NORTH ) {
         U = (texcoords.x + 0)/ 3;
@@ -551,6 +573,10 @@ void main()
 
         if (skytheme == 1)
             Kd = texture(TextureImage2, vec2(U,V)).rgba;
+        else if (skytheme == 3)
+            Kd = texture(TextureImage3, vec2(U,V)).rgba;
+        else if (skytheme == 4)
+            Kd = texture(TextureImage4, vec2(U,V)).rgba;
         color = Kd;
     }
 
